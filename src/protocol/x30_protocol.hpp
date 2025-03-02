@@ -2,6 +2,7 @@
 
 #include "i_message.hpp"
 #include "message_types.hpp"
+#include "protocol_header.hpp"
 #include <memory>
 #include <string>
 #include <map>

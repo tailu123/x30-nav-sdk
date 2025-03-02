@@ -8,8 +8,36 @@ namespace protocol {
 
 std::unique_ptr<IMessage> X30Protocol::parseReceivedData(const std::string& data) {
     try {
+        // 检查数据长度是否足够包含协议头
+        constexpr size_t HEADER_SIZE = sizeof(ProtocolHeader);
+        if (data.size() < HEADER_SIZE) {
+            std::cerr << "数据长度不足以包含协议头" << std::endl;
+            return nullptr;
+        }
+
+        // 解析协议头
+        const ProtocolHeader* header = reinterpret_cast<const ProtocolHeader*>(data.data());
+
+        // 验证同步字节
+        if (!header->validateSyncBytes()) {
+            std::cerr << "协议头同步字节无效" << std::endl;
+            return nullptr;
+        }
+
+        // 获取消息体长度
+        uint16_t body_size = header->getBodySize();
+
+        // 检查数据长度是否足够
+        if (data.size() < HEADER_SIZE + body_size) {
+            std::cerr << "数据长度不足: 期望 " << (HEADER_SIZE + body_size) << ", 实际 " << data.size() << std::endl;
+            return nullptr;
+        }
+
+        // 提取消息体
+        std::string message_body = data.substr(HEADER_SIZE, body_size);
+
         // 提取消息类型
-        MessageType type = extractMessageType(data);
+        MessageType type = extractMessageType(message_body);
 
         // 创建对应类型的消息对象
         auto message = createMessage(type);
@@ -18,7 +46,7 @@ std::unique_ptr<IMessage> X30Protocol::parseReceivedData(const std::string& data
         }
 
         // 反序列化消息
-        if (!message->deserialize(data)) {
+        if (!message->deserialize(message_body)) {
             return nullptr;
         }
 
@@ -30,7 +58,20 @@ std::unique_ptr<IMessage> X30Protocol::parseReceivedData(const std::string& data
 }
 
 std::string X30Protocol::serializeMessage(const IMessage& message) {
-    return message.serialize();
+    // 获取消息体
+    std::string message_body = message.serialize();
+
+    // 创建协议头
+    ProtocolHeader header(message_body.size());
+
+    // 组合协议头和消息体
+    std::string result;
+    constexpr size_t HEADER_SIZE = sizeof(ProtocolHeader);
+    result.reserve(HEADER_SIZE + message_body.size());
+    result.append(reinterpret_cast<const char*>(&header), HEADER_SIZE);
+    result.append(message_body);
+
+    return result;
 }
 
 MessageType X30Protocol::extractMessageType(const std::string& data) {
