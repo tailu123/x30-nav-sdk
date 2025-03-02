@@ -1,0 +1,18 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+# 查找依赖包
+find_dependency(Boost REQUIRED COMPONENTS system thread)
+find_dependency(nlohmann_json REQUIRED)
+
+# 导入目标
+include("${CMAKE_CURRENT_LIST_DIR}/x30_nav_sdkTargets.cmake")
+
+# 检查目标是否存在
+if(NOT TARGET x30_nav_sdk)
+    message(FATAL_ERROR "Target x30_nav_sdk not found")
+endif()
+
+# 设置找到包的标志
+set(x30_nav_sdk_FOUND TRUE)
