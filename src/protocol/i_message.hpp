@@ -63,6 +63,18 @@ public:
      * @return 是否成功
      */
     virtual bool deserialize(const std::string& data) = 0;
+
+    /**
+     * @brief 获取消息序列号
+     * @return 消息序列号
+     */
+    virtual uint16_t getSequenceNumber() const = 0;
+
+    /**
+     * @brief 设置消息序列号
+     * @param sequenceNumber 消息序列号
+     */
+    virtual void setSequenceNumber(uint16_t sequenceNumber) = 0;
 };
 
 /**

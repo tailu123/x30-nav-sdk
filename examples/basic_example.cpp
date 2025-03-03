@@ -118,6 +118,7 @@ int main(int argc, char* argv[]) {
 
         // 异步发送导航任务
         std::cout << "开始导航任务..." << std::endl;
+        #if 0
         auto futureResult = sdk.startNavigationAsync(points);
 
         // 创建线程等待导航任务的异步响应
@@ -136,6 +137,7 @@ int main(int argc, char* argv[]) {
                 navigationResponseReceived = true; // 出错也标记为已收到，以便退出轮询
             }
         });
+        #endif
 
         // 轮询查询任务状态和实时状态，直到收到导航响应
         int pollCount = 0;
@@ -158,10 +160,12 @@ int main(int argc, char* argv[]) {
         }
 
         // 等待导航响应线程完成
+        #if 0
         if (navigationResponseThread.joinable()) {
             navigationResponseThread.join();
         }
-
+        #endif
+        
         if (!navigationResponseReceived) {
             std::cout << "达到最大轮询次数，尝试取消任务..." << std::endl;
             if (sdk.cancelNavigation()) {

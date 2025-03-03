@@ -30,6 +30,7 @@ endif()
 # 设置包含目录
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${Boost_INCLUDE_DIRS}
     ${RAPIDXML_INCLUDE_DIR}
 )
@@ -46,7 +47,7 @@ add_library(${PROJECT_NAME} SHARED ${SDK_SOURCES})
 set_target_properties(${PROJECT_NAME} PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION ${PROJECT_VERSION_MAJOR}
-    PUBLIC_HEADER "include/dog_navigation/navigation_sdk.h;include/dog_navigation/types.h"
+    PUBLIC_HEADER "include/dog_navigation/navigation_sdk.h;include/dog_navigation/types.h;include/dog_navigation/navigation_sdk_v2.h;include/dog_navigation/types_v2.h"
 )
 
 # 链接依赖库

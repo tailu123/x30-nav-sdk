@@ -60,7 +60,7 @@ public:
 
     /**
      * @brief 设置事件回调函数
-     * @param callback 事件回调函数
+     * @param callback 事件回调函数, 用于网路连接状态通知
      */
     void setEventCallback(EventCallback callback);
 
@@ -69,32 +69,6 @@ public:
      * @return 实时状态信息
      */
     RealTimeStatus getRealTimeStatus();
-
-    /**
-     * @brief 异步获取机器狗的实时状态
-     * @return 包含实时状态信息的future对象
-     */
-    std::future<RealTimeStatus> getRealTimeStatusAsync();
-
-    /**
-     * @brief 基于回调的异步获取机器狗的实时状态
-     * @param callback 状态回调函数，接收状态信息和错误码
-     */
-    void getRealTimeStatusAsync(RealTimeStatusCallback callback);
-
-    /**
-     * @brief 开始导航任务
-     * @param points 导航点列表
-     * @return 导航任务结果
-     */
-    NavigationResult startNavigation(const std::vector<NavigationPoint>& points);
-
-    /**
-     * @brief 异步开始导航任务
-     * @param points 导航点列表
-     * @return 包含导航任务结果的future对象
-     */
-    std::future<NavigationResult> startNavigationAsync(const std::vector<NavigationPoint>& points);
 
     /**
      * @brief 基于回调的异步开始导航任务
@@ -110,34 +84,10 @@ public:
     bool cancelNavigation();
 
     /**
-     * @brief 异步取消当前导航任务
-     * @return 包含操作结果的future对象
-     */
-    std::future<bool> cancelNavigationAsync();
-
-    /**
-     * @brief 基于回调的异步取消当前导航任务
-     * @param callback 操作结果回调函数
-     */
-    void cancelNavigationAsync(OperationResultCallback callback);
-
-    /**
      * @brief 查询当前导航任务状态
      * @return 任务状态查询结果
      */
     TaskStatusResult queryTaskStatus();
-
-    /**
-     * @brief 异步查询当前导航任务状态
-     * @return 包含任务状态查询结果的future对象
-     */
-    std::future<TaskStatusResult> queryTaskStatusAsync();
-
-    /**
-     * @brief 基于回调的异步查询当前导航任务状态
-     * @param callback 任务状态回调函数
-     */
-    void queryTaskStatusAsync(TaskStatusResultCallback callback);
 
     /**
      * @brief 获取SDK版本

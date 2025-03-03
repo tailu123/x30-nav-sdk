@@ -44,10 +44,23 @@ inline std::string getCurrentTimestamp() {
     return ss.str();
 }
 
+class MessageBase : public IMessage {
+public:
+    uint16_t sequenceNumber = 0;
+
+    uint16_t getSequenceNumber() const override {
+        return sequenceNumber;
+    }
+
+    void setSequenceNumber(uint16_t sequenceNumber) override {
+        this->sequenceNumber = sequenceNumber;
+    }
+};
+
 /**
  * @brief 获取实时状态请求
  */
-class GetRealTimeStatusRequest : public IMessage {
+class GetRealTimeStatusRequest : public MessageBase {
 public:
     std::string timestamp;
 
@@ -105,7 +118,7 @@ public:
 /**
  * @brief 获取实时状态响应
  */
-class GetRealTimeStatusResponse : public IMessage {
+class GetRealTimeStatusResponse : public MessageBase {
 public:
     int motionState = 0;
     double posX = 0.0;
@@ -281,7 +294,7 @@ public:
 /**
  * @brief 导航任务请求
  */
-class NavigationTaskRequest : public IMessage {
+class NavigationTaskRequest : public MessageBase {
 public:
     std::vector<NavigationPoint> points;
     std::string timestamp;
@@ -422,7 +435,7 @@ public:
 /**
  * @brief 导航任务响应
  */
-class NavigationTaskResponse : public IMessage {
+class NavigationTaskResponse : public MessageBase {
 public:
     int value = 0;
     ErrorCode errorCode = ErrorCode::SUCCESS;
@@ -511,7 +524,7 @@ public:
 /**
  * @brief 查询任务状态请求
  */
-class QueryStatusRequest : public IMessage {
+class QueryStatusRequest : public MessageBase {
 public:
     std::string timestamp;
 
@@ -569,7 +582,7 @@ public:
 /**
  * @brief 查询任务状态响应
  */
-class QueryStatusResponse : public IMessage {
+class QueryStatusResponse : public MessageBase {
 public:
     int value = 0;
     NavigationStatus status = NavigationStatus::COMPLETED;
@@ -663,7 +676,7 @@ public:
 /**
  * @brief 取消任务请求
  */
-class CancelTaskRequest : public IMessage {
+class CancelTaskRequest : public MessageBase {
 public:
     std::string timestamp;
 
@@ -721,7 +734,7 @@ public:
 /**
  * @brief 取消任务响应
  */
-class CancelTaskResponse : public IMessage {
+class CancelTaskResponse : public MessageBase {
 public:
     ErrorCode errorCode = ErrorCode::SUCCESS;
     std::string timestamp;

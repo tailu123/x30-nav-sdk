@@ -22,34 +22,34 @@ void toLittleEndian(char* buf, size_t size) {
     }
 }
 
-// 加锁保护，全局消息ID计数器
-std::mutex g_message_id_mutex;
-// 全局消息ID计数器
-static uint16_t g_message_id_counter = 0;
+// // 加锁保护，全局消息ID计数器
+// std::mutex g_message_id_mutex;
+// // 全局消息ID计数器
+// static uint16_t g_message_id_counter = 0;
 
-// 获取新的消息ID
-uint16_t generateMessageId() {
-    std::lock_guard<std::mutex> lock(g_message_id_mutex);
-    // 从0开始递增，达到65535后重新从0开始
-    g_message_id_counter = (g_message_id_counter + 1) % 65536;
-    return g_message_id_counter;
-}
+// // 获取新的消息ID
+// uint16_t generateMessageId() {
+//     std::lock_guard<std::mutex> lock(g_message_id_mutex);
+//     // 从0开始递增，达到65535后重新从0开始
+//     g_message_id_counter = (g_message_id_counter + 1) % 65536;
+//     return g_message_id_counter;
+// }
 }  // namespace
 
 namespace protocol {
 
 ProtocolHeader::ProtocolHeader()
-    : sync_byte1(HEADER_1), sync_byte2(HEADER_2), sync_byte3(HEADER_3), sync_byte4(HEADER_4), length(0), message_id(0) {
+    : sync_byte1(HEADER_1), sync_byte2(HEADER_2), sync_byte3(HEADER_3), sync_byte4(HEADER_4), length(0), sequenceNumber(0) {
     reserved.fill(RESERVED_VALUE);
 }
 
-ProtocolHeader::ProtocolHeader(uint16_t length)
+ProtocolHeader::ProtocolHeader(uint16_t length, uint16_t sequenceNumber)
     : sync_byte1(HEADER_1),
       sync_byte2(HEADER_2),
       sync_byte3(HEADER_3),
       sync_byte4(HEADER_4),
       length(length),
-      message_id(generateMessageId()) {
+      sequenceNumber(sequenceNumber) {
     reserved.fill(RESERVED_VALUE);
     toLittleEndian(reinterpret_cast<char*>(&this->length), sizeof(this->length));
 }

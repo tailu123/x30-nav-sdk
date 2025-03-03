@@ -4,10 +4,11 @@
 
 namespace network {
 
-AsioNetworkModel::AsioNetworkModel(MessageQueue& message_queue)
+AsioNetworkModel::AsioNetworkModel(INetworkCallback& callback)
     : socket_(io_context_),
       connected_(false),
-      message_queue_(message_queue) {
+      callback_(callback) {
+    //   message_queue_(message_queue) {
 }
 
 AsioNetworkModel::~AsioNetworkModel() {
@@ -133,8 +134,7 @@ void AsioNetworkModel::handleReceive(const boost::system::error_code& error, std
         // 清空接收缓冲区
         receive_data_.clear();
 
-        // 将消息推入队列
-        message_queue_.pushMessage(std::move(message));
+        callback_.onMessageReceived(std::move(message));
     }
 
     // 继续接收

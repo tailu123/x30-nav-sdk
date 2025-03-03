@@ -50,6 +50,9 @@ std::unique_ptr<IMessage> X30Protocol::parseReceivedData(const std::string& data
             return nullptr;
         }
 
+        // 设置消息序列号
+        message->setSequenceNumber(header->sequenceNumber);
+
         return message;
     } catch (const std::exception& e) {
         std::cerr << "解析数据异常: " << e.what() << std::endl;
@@ -62,7 +65,7 @@ std::string X30Protocol::serializeMessage(const IMessage& message) {
     std::string message_body = message.serialize();
 
     // 创建协议头
-    ProtocolHeader header(message_body.size());
+    ProtocolHeader header(message_body.size(), message.getSequenceNumber());
 
     // 组合协议头和消息体
     std::string result;

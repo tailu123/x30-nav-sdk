@@ -86,6 +86,8 @@ int main(int argc, char* argv[]) {
         // 创建 SDK 实例
         dog_navigation::SdkOptions options;
         options.connectionTimeout = std::chrono::milliseconds(3000);
+        options.requestTimeout = std::chrono::milliseconds(3000);
+        options.navigationAsyncTimeout = std::chrono::minutes(3);
         options.enableLogging = true;
 
         dog_navigation::NavigationSdk sdk(options);
@@ -102,8 +104,8 @@ int main(int argc, char* argv[]) {
         std::cout << "连接成功!" << std::endl;
 
         // 获取初始实时状态
-        auto status = sdk.getRealTimeStatus();
-        printStatus(status);
+        // auto status = sdk.getRealTimeStatus();
+        // printStatus(status);
 
         // 创建导航点
         std::vector<dog_navigation::NavigationPoint> points;
@@ -118,10 +120,6 @@ int main(int argc, char* argv[]) {
         // 标记是否收到导航响应
         std::atomic<bool> navigationResponseReceived{false};
 
-        // 用于等待导航响应的同步对象
-        std::mutex navigationMutex;
-        std::condition_variable navigationCV;
-
         // 异步发送导航任务（使用回调形式）
         std::cout << "开始导航任务..." << std::endl;
         sdk.startNavigationAsync(points, [&](const dog_navigation::NavigationResult& result) {
@@ -130,9 +128,6 @@ int main(int argc, char* argv[]) {
 
             // 标记已收到导航响应
             navigationResponseReceived = true;
-
-            // 通知等待线程
-            navigationCV.notify_one();
         });
 
         // 轮询查询任务状态和实时状态，直到收到导航响应
@@ -151,15 +146,31 @@ int main(int argc, char* argv[]) {
             printTaskStatus(taskStatus);
 
             // 获取实时状态
-            status = sdk.getRealTimeStatus();
+            auto status = sdk.getRealTimeStatus();
             printStatus(status);
         }
 
-        // 如果还没收到响应，等待一段时间
-        if (!navigationResponseReceived) {
-            std::unique_lock<std::mutex> lock(navigationMutex);
-            navigationCV.wait_for(lock, std::chrono::seconds(5), [&]() { return navigationResponseReceived.load(); });
-        }
+        // 方式1不关心取消导航结果
+        // if (!navigationResponseReceived) {
+        //     std::cout << "达到最大轮询次数，尝试取消任务..." << std::endl;
+        //     sdk.cancelNavigationAsync();
+
+        //     // 等待一小段时间，确保取消请求被处理
+        //     std::this_thread::sleep_for(std::chrono::seconds(2));
+        // }
+
+        // 方式2关心取消导航结果
+        // if (!navigationResponseReceived) {
+        //     std::cout << "达到最大轮询次数，尝试取消任务..." << std::endl;
+
+        //     sdk.cancelNavigationAsync([](bool result, dog_navigation::ErrorCode errorCode) {
+        //         std::cout << "取消导航任务结果: " << (result ? "成功" : "失败") 
+        //             << ", 错误码: " << static_cast<int>(errorCode) << std::endl;
+        //     });
+
+        //     // 等待一小段时间，确保取消请求被处理
+        //     std::this_thread::sleep_for(std::chrono::seconds(2));
+        // }
 
         if (!navigationResponseReceived) {
             std::cout << "达到最大轮询次数，尝试取消任务..." << std::endl;
@@ -169,6 +180,9 @@ int main(int argc, char* argv[]) {
                 std::cout << "导航任务取消失败" << std::endl;
             }
         }
+
+        // 等待2秒
+        std::this_thread::sleep_for(std::chrono::seconds(2));
 
         // 断开连接
         sdk.disconnect();
