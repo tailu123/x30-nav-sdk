@@ -13,7 +13,7 @@
 
 // 包含网络和协议相关头文件
 #include "network/asio_network_model.hpp"
-#include "network/message_queue.hpp"
+// #include "network/message_queue.hpp"
 #include "protocol/x30_protocol.hpp"
 
 
@@ -22,6 +22,39 @@ namespace dog_navigation {
 
 // SDK版本
 static const std::string SDK_VERSION = "0.1.0";
+
+/**
+ * @brief 安全回调包装函数，用于捕获和处理用户回调函数中可能抛出的异常
+ * @tparam Callback 回调函数类型
+ * @tparam Args 回调函数参数类型
+ * @param callback 用户回调函数
+ * @param callbackType 回调函数类型描述，用于日志记录
+ * @param args 回调函数参数
+ */
+template<typename Callback, typename... Args>
+void safeCallback(const Callback& callback, const std::string& callbackType, Args&&... args) {
+    if (!callback) {
+        return;
+    }
+
+    try {
+        callback(std::forward<Args>(args)...);
+    } catch (const std::exception& e) {
+        auto now = std::chrono::system_clock::now();
+        auto time_t_now = std::chrono::system_clock::to_time_t(now);
+        std::stringstream ss;
+        ss << std::put_time(std::localtime(&time_t_now), "%Y-%m-%d %H:%M:%S");
+
+        std::cerr << "[" << ss.str() << "] " << callbackType << " 回调函数异常: " << e.what() << std::endl;
+    } catch (...) {
+        auto now = std::chrono::system_clock::now();
+        auto time_t_now = std::chrono::system_clock::to_time_t(now);
+        std::stringstream ss;
+        ss << std::put_time(std::localtime(&time_t_now), "%Y-%m-%d %H:%M:%S");
+
+        std::cerr << "[" << ss.str() << "] " << callbackType << " 回调函数发生未知异常" << std::endl;
+    }
+}
 
 // 事件转换为字符串的实现
 std::string Event::toString() const {
@@ -64,18 +97,39 @@ std::string Event::toString() const {
     return ss.str();
 }
 
-// // 网络层回调接口
-// class INetworkCallback {
-// public:
-//     virtual ~INetworkCallback() = default;
-//     virtual void onMessageReceived(std::unique_ptr<protocol::IMessage> message) = 0;
-// };
+// protocol::GetRealTimeStatusResponse -> RealTimeStatus
+RealTimeStatus convertToRealTimeStatus(const protocol::GetRealTimeStatusResponse& realTimeResp) {
+    RealTimeStatus status;
+    status.motionState = realTimeResp.motionState;
+    status.posX = realTimeResp.posX;
+    status.posY = realTimeResp.posY;
+    status.posZ = realTimeResp.posZ;
+    status.angleYaw = realTimeResp.angleYaw;
+    status.roll = realTimeResp.roll;
+    status.pitch = realTimeResp.pitch;
+    status.yaw = realTimeResp.yaw;
+    status.speed = realTimeResp.speed;
+    status.curOdom = realTimeResp.curOdom;
+    status.sumOdom = realTimeResp.sumOdom;
+    status.curRuntime = realTimeResp.curRuntime;
+    status.sumRuntime = realTimeResp.sumRuntime;
+    status.res = realTimeResp.res;
+    status.x0 = realTimeResp.x0;
+    status.y0 = realTimeResp.y0;
+    status.h = realTimeResp.h;
+    status.electricity = realTimeResp.electricity;
+    status.location = realTimeResp.location;
+    status.RTKState = realTimeResp.RTKState;
+    status.onDockState = realTimeResp.onDockState;
+    status.gaitState = realTimeResp.gaitState;
+    status.motorState = realTimeResp.motorState;
+    status.chargeState = realTimeResp.chargeState;
+    status.controlMode = realTimeResp.controlMode;
+    status.mapUpdateState = realTimeResp.mapUpdateState;
+    status.timestamp = realTimeResp.timestamp;
 
-// 请求来源类型
-// enum class RequestSource {
-//     SYNC_REQUEST,    ///< 同步请求
-//     ASYNC_REQUEST    ///< 异步请求
-// };
+    return status;
+}
 
 // SDK实现类
 class NavigationSdkImpl : public ::network::INetworkCallback {
@@ -97,7 +151,7 @@ public:
             event.type = EventType::DISCONNECTED;
             event.message = "已断开连接";
             event.timestamp = std::chrono::system_clock::now();
-            event_callback_(event);
+            safeCallback(event_callback_, "事件", event);
         }
     }
 
@@ -115,7 +169,7 @@ public:
                 event.type = EventType::CONNECTED;
                 event.message = "已连接到 " + host + ":" + std::to_string(port);
                 event.timestamp = std::chrono::system_clock::now();
-                event_callback_(event);
+                safeCallback(event_callback_, "事件", event);
             }
 
             return true;
@@ -156,7 +210,7 @@ public:
 
         // 发送请求
         {
-            std::lock_guard<std::mutex> lock(network_mutex_);
+            // std::lock_guard<std::mutex> lock(network_mutex_);
             network_model_->sendMessage(request);
         }
 
@@ -165,18 +219,18 @@ public:
         {
             std::unique_lock<std::mutex> lock(pending_requests_mutex_);
             auto& pendingReq = pendingRequests_[seqNum];
-            
+
             if (!pendingReq.responseReceived) {
-                pendingReq.cv->wait_for(lock, options_.requestTimeout, 
+                pendingReq.cv->wait_for(lock, options_.requestTimeout,
                     [&pendingReq]() { return pendingReq.responseReceived; });
             }
-            
+
             if (pendingReq.responseReceived && pendingReq.response) {
                 // 获取响应并从映射表中移除
                 realTimeResp = std::unique_ptr<protocol::GetRealTimeStatusResponse>(
                     dynamic_cast<protocol::GetRealTimeStatusResponse*>(pendingReq.response.get()));
             }
-            
+
             // 移除请求
             pendingRequests_.erase(seqNum);
         }
@@ -186,36 +240,7 @@ public:
         }
 
         // 转换为SDK的RealTimeStatus
-        RealTimeStatus status;
-        status.motionState = realTimeResp->motionState;
-        status.posX = realTimeResp->posX;
-        status.posY = realTimeResp->posY;
-        status.posZ = realTimeResp->posZ;
-        status.angleYaw = realTimeResp->angleYaw;
-        status.roll = realTimeResp->roll;
-        status.pitch = realTimeResp->pitch;
-        status.yaw = realTimeResp->yaw;
-        status.speed = realTimeResp->speed;
-        status.curOdom = realTimeResp->curOdom;
-        status.sumOdom = realTimeResp->sumOdom;
-        status.curRuntime = realTimeResp->curRuntime;
-        status.sumRuntime = realTimeResp->sumRuntime;
-        status.res = realTimeResp->res;
-        status.x0 = realTimeResp->x0;
-        status.y0 = realTimeResp->y0;
-        status.h = realTimeResp->h;
-        status.electricity = realTimeResp->electricity;
-        status.location = realTimeResp->location;
-        status.RTKState = realTimeResp->RTKState;
-        status.onDockState = realTimeResp->onDockState;
-        status.gaitState = realTimeResp->gaitState;
-        status.motorState = realTimeResp->motorState;
-        status.chargeState = realTimeResp->chargeState;
-        status.controlMode = realTimeResp->controlMode;
-        status.mapUpdateState = realTimeResp->mapUpdateState;
-        status.timestamp = realTimeResp->timestamp;
-
-        return status;
+        return convertToRealTimeStatus(*realTimeResp);
     }
 
     // 添加基于回调的异步方法实现
@@ -228,7 +253,7 @@ public:
             NavigationResult failResult;
             failResult.errorCode = ErrorCode::NOT_CONNECTED;
             failResult.timestamp = getCurrentTimestamp();
-            callback(failResult);
+            safeCallback(callback, "导航结果", failResult);
             return;
         }
 
@@ -236,7 +261,7 @@ public:
             NavigationResult failResult;
             failResult.errorCode = ErrorCode::INVALID_PARAM;
             failResult.timestamp = getCurrentTimestamp();
-            callback(failResult);
+            safeCallback(callback, "导航结果", failResult);
             return;
         }
 
@@ -275,7 +300,7 @@ public:
         }
         // 发送请求
         {
-            std::lock_guard<std::mutex> lock(network_mutex_);
+            // std::lock_guard<std::mutex> lock(network_mutex_);
             network_model_->sendMessage(request);
         }
     }
@@ -298,7 +323,7 @@ public:
 
         // 发送请求
         {
-            std::lock_guard<std::mutex> lock(network_mutex_);
+            // std::lock_guard<std::mutex> lock(network_mutex_);
             network_model_->sendMessage(request);
         }
 
@@ -307,12 +332,12 @@ public:
         {
             std::unique_lock<std::mutex> lock(pending_requests_mutex_);
             auto& pendingReq = pendingRequests_[seqNum];
-            
+
             if (!pendingReq.responseReceived) {
-                pendingReq.cv->wait_for(lock, options_.requestTimeout,  
+                pendingReq.cv->wait_for(lock, options_.requestTimeout,
                     [&pendingReq]() { return pendingReq.responseReceived; });
             }
-            
+
             if (pendingReq.responseReceived && pendingReq.response) {
                 cancelResp = std::unique_ptr<protocol::CancelTaskResponse>(
                     dynamic_cast<protocol::CancelTaskResponse*>(pendingReq.response.get()));
@@ -346,21 +371,21 @@ public:
 
         // 发送请求
         {
-            std::lock_guard<std::mutex> lock(network_mutex_);
+            // std::lock_guard<std::mutex> lock(network_mutex_);
             network_model_->sendMessage(request);
         }
 
-        // 等待响应 
+        // 等待响应
         std::unique_ptr<protocol::QueryStatusResponse> statusResp;
         {
             std::unique_lock<std::mutex> lock(pending_requests_mutex_);
             auto& pendingReq = pendingRequests_[seqNum];
-            
+
             if (!pendingReq.responseReceived) {
-                pendingReq.cv->wait_for(lock, options_.requestTimeout, 
+                pendingReq.cv->wait_for(lock, options_.requestTimeout,
                     [&pendingReq]() { return pendingReq.responseReceived; });
             }
-            
+
             if (pendingReq.responseReceived && pendingReq.response) {
                 statusResp = std::unique_ptr<protocol::QueryStatusResponse>(
                     dynamic_cast<protocol::QueryStatusResponse*>(pendingReq.response.get()));
@@ -391,7 +416,7 @@ public:
 
         uint16_t seqNum = message->getSequenceNumber();
         protocol::MessageType msgType = message->getType();
-        
+
         if (msgType == protocol::MessageType::NAVIGATION_TASK_RESP) {
 
             NavigationResultCallback callback;
@@ -401,33 +426,25 @@ public:
                 std::lock_guard<std::mutex> lock(navigation_result_callbacks_mutex_);
                 auto it = navigation_result_callbacks_.find(seqNum);
                 if (it != navigation_result_callbacks_.end()) {
-                    auto navResp = dynamic_cast<protocol::NavigationTaskResponse*>(message.get());
-                    if (!navResp) {
-                        return;
-                    }
-
-                    result.value = navResp->value;
-                    result.errorCode = static_cast<ErrorCode>(navResp->errorCode);
-                    result.errorStatus = navResp->errorStatus;
-                    result.timestamp = navResp->timestamp;
-                    callback = std::move(it->second);
+                    callback = it->second;
                     navigation_result_callbacks_.erase(it);
                 }
             }
 
-            // 执行回调函数, 捕获异常保护网络线程
-            try {   
-                if (callback) {
-                    callback(result);
-                }
-            } catch (const std::exception& e) {
-                std::cerr << "导航结果回调函数执行失败: " << e.what() << std::endl;
+            // 如果有回调，则使用安全回调包装函数调用
+            if (callback) {
+                auto resp = static_cast<protocol::NavigationTaskResponse*>(message.get());
+                result.value = resp->value;
+                result.errorCode = static_cast<ErrorCode>(resp->errorCode);
+                result.errorStatus = resp->errorStatus;
+                result.timestamp = resp->timestamp;
+                safeCallback(callback, "导航结果", result);
             }
 
             return;
         }
 
-        // 检查是否有等待此响应的请求
+        // 处理其他类型的响应消息
         std::lock_guard<std::mutex> lock(pending_requests_mutex_);
         auto it = pendingRequests_.find(seqNum);
         if (it != pendingRequests_.end() && it->second.expectedResponseType == msgType) {
@@ -436,7 +453,6 @@ public:
             it->second.cv->notify_one();
         }
     }
-
 
 private:
     bool isRequestPending(uint16_t sequenceNumber) {
@@ -447,11 +463,13 @@ private:
         std::lock_guard<std::mutex> lock(pending_requests_mutex_);
         PendingRequest req;
         req.expectedResponseType = expectedType;
+        req.responseReceived = false;
         req.cv = std::make_shared<std::condition_variable>();
-        pendingRequests_[sequenceNumber] = std::move(req);
+        pendingRequests_.emplace(sequenceNumber, std::move(req));
     }
 
     void removePendingRequest(uint16_t sequenceNumber) {
+        std::lock_guard<std::mutex> lock(pending_requests_mutex_);
         pendingRequests_.erase(sequenceNumber);
     }
 
@@ -467,7 +485,7 @@ private:
     SdkOptions options_;
     std::atomic<bool> connected_;
     EventCallback event_callback_;
-    std::mutex network_mutex_;
+    // std::mutex network_mutex_;
     std::unique_ptr<::network::AsioNetworkModel> network_model_;
 
     // 生成序列号， 从0到65535后溢出回到0
@@ -477,9 +495,9 @@ private:
     }
 
     struct PendingRequest {
-        protocol::MessageType expectedResponseType;
-        std::unique_ptr<protocol::IMessage> response;
-        bool responseReceived;
+        protocol::MessageType expectedResponseType{};
+        std::unique_ptr<protocol::IMessage> response{};
+        bool responseReceived{false};
         std::shared_ptr<std::condition_variable> cv;
     };
 

@@ -87,7 +87,6 @@ int main(int argc, char* argv[]) {
         dog_navigation::SdkOptions options;
         options.connectionTimeout = std::chrono::milliseconds(3000);
         options.requestTimeout = std::chrono::milliseconds(3000);
-        options.navigationAsyncTimeout = std::chrono::minutes(3);
         options.enableLogging = true;
 
         dog_navigation::NavigationSdk sdk(options);
@@ -104,8 +103,8 @@ int main(int argc, char* argv[]) {
         std::cout << "连接成功!" << std::endl;
 
         // 获取初始实时状态
-        // auto status = sdk.getRealTimeStatus();
-        // printStatus(status);
+        auto status = sdk.getRealTimeStatus();
+        printStatus(status);
 
         // 创建导航点
         std::vector<dog_navigation::NavigationPoint> points;
@@ -149,28 +148,6 @@ int main(int argc, char* argv[]) {
             auto status = sdk.getRealTimeStatus();
             printStatus(status);
         }
-
-        // 方式1不关心取消导航结果
-        // if (!navigationResponseReceived) {
-        //     std::cout << "达到最大轮询次数，尝试取消任务..." << std::endl;
-        //     sdk.cancelNavigationAsync();
-
-        //     // 等待一小段时间，确保取消请求被处理
-        //     std::this_thread::sleep_for(std::chrono::seconds(2));
-        // }
-
-        // 方式2关心取消导航结果
-        // if (!navigationResponseReceived) {
-        //     std::cout << "达到最大轮询次数，尝试取消任务..." << std::endl;
-
-        //     sdk.cancelNavigationAsync([](bool result, dog_navigation::ErrorCode errorCode) {
-        //         std::cout << "取消导航任务结果: " << (result ? "成功" : "失败") 
-        //             << ", 错误码: " << static_cast<int>(errorCode) << std::endl;
-        //     });
-
-        //     // 等待一小段时间，确保取消请求被处理
-        //     std::this_thread::sleep_for(std::chrono::seconds(2));
-        // }
 
         if (!navigationResponseReceived) {
             std::cout << "达到最大轮询次数，尝试取消任务..." << std::endl;

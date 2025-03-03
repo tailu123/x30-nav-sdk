@@ -137,7 +137,6 @@ struct Event {
 struct SdkOptions {
     std::chrono::milliseconds connectionTimeout{5000}; ///< 连接超时时间
     std::chrono::milliseconds requestTimeout{3000};    ///< 请求超时时间
-    std::chrono::milliseconds navigationAsyncTimeout{180000}; ///< 导航异步请求超时时间（默认3分钟）
     bool autoReconnect = true;                         ///< 是否自动重连
     int maxReconnectAttempts = 3;                      ///< 最大重连尝试次数
     std::chrono::milliseconds reconnectInterval{1000}; ///< 重连间隔

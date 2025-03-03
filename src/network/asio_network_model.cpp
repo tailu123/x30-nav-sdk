@@ -1,14 +1,17 @@
 #include "asio_network_model.hpp"
 #include "../protocol/x30_protocol.hpp"
 #include <iostream>
+#include <chrono>
+#include <sstream>
+#include <iomanip>
 
 namespace network {
 
 AsioNetworkModel::AsioNetworkModel(INetworkCallback& callback)
     : socket_(io_context_),
+      strand_(io_context_),
       connected_(false),
       callback_(callback) {
-    //   message_queue_(message_queue) {
 }
 
 AsioNetworkModel::~AsioNetworkModel() {
@@ -48,14 +51,25 @@ bool AsioNetworkModel::connect(const std::string& host, uint16_t port) {
 }
 
 void AsioNetworkModel::disconnect() {
-    if (!connected_) {
+    if (!connected_ && !socket_.is_open()) {
         return;
     }
 
     try {
-        // 关闭socket
-        boost::system::error_code error;
-        socket_.close(error);
+        // 取消所有异步操作
+        boost::system::error_code ec;
+        socket_.cancel(ec);
+
+        // 使用 strand 确保安全关闭
+        boost::asio::post(strand_, [this]() {
+            // 关闭socket
+            boost::system::error_code error;
+            socket_.close(error);
+
+            if (error) {
+                std::cerr << "关闭socket错误: " << error.message() << std::endl;
+            }
+        });
 
         // 停止IO上下文
         io_context_.stop();
@@ -85,15 +99,22 @@ bool AsioNetworkModel::sendMessage(const protocol::IMessage& message) {
         protocol::X30Protocol protocol;
         std::string data = protocol.serializeMessage(message);
 
-        // 发送数据
-        std::lock_guard<std::mutex> lock(mutex_);
-        boost::asio::async_write(
-            socket_,
-            boost::asio::buffer(data),
-            [this](const boost::system::error_code& error, std::size_t bytes_transferred) {
-                handleSend(error, bytes_transferred);
+        // 使用 strand 包装异步写入操作，确保线程安全
+        boost::asio::post(strand_, [this, data = std::move(data)]() {
+            if (!isConnected()) {
+                return;
             }
-        );
+
+            boost::asio::async_write(
+                socket_,
+                boost::asio::buffer(data),
+                boost::asio::bind_executor(strand_,
+                    [this](const boost::system::error_code& error, std::size_t bytes_transferred) {
+                        handleSend(error, bytes_transferred);
+                    }
+                )
+            );
+        });
 
         return true;
     } catch (const std::exception& e) {
@@ -107,12 +128,44 @@ void AsioNetworkModel::startReceive() {
         return;
     }
 
+    // 使用 strand 包装异步读取操作，确保线程安全
     socket_.async_read_some(
         boost::asio::buffer(receive_buffer_),
-        [this](const boost::system::error_code& error, std::size_t bytes_transferred) {
-            handleReceive(error, bytes_transferred);
-        }
+        boost::asio::bind_executor(strand_,
+            [this](const boost::system::error_code& error, std::size_t bytes_transferred) {
+                handleReceive(error, bytes_transferred);
+            }
+        )
     );
+}
+
+/**
+ * @brief 安全回调包装函数，用于捕获和处理回调函数中可能抛出的异常
+ * @tparam Callback 回调函数类型
+ * @tparam Args 回调函数参数类型
+ * @param callback 回调函数
+ * @param callbackType 回调函数类型描述，用于日志记录
+ * @param args 回调函数参数
+ */
+template<typename Callback, typename... Args>
+void safeCallback(const Callback& callback, const std::string& callbackType, Args&&... args) {
+    try {
+        callback(std::forward<Args>(args)...);
+    } catch (const std::exception& e) {
+        auto now = std::chrono::system_clock::now();
+        auto time_t_now = std::chrono::system_clock::to_time_t(now);
+        std::stringstream ss;
+        ss << std::put_time(std::localtime(&time_t_now), "%Y-%m-%d %H:%M:%S");
+
+        std::cerr << "[" << ss.str() << "] " << callbackType << " 回调函数异常: " << e.what() << std::endl;
+    } catch (...) {
+        auto now = std::chrono::system_clock::now();
+        auto time_t_now = std::chrono::system_clock::to_time_t(now);
+        std::stringstream ss;
+        ss << std::put_time(std::localtime(&time_t_now), "%Y-%m-%d %H:%M:%S");
+
+        std::cerr << "[" << ss.str() << "] " << callbackType << " 回调函数发生未知异常" << std::endl;
+    }
 }
 
 void AsioNetworkModel::handleReceive(const boost::system::error_code& error, std::size_t bytes_transferred) {
@@ -134,7 +187,16 @@ void AsioNetworkModel::handleReceive(const boost::system::error_code& error, std
         // 清空接收缓冲区
         receive_data_.clear();
 
-        callback_.onMessageReceived(std::move(message));
+        // 使用 strand 确保回调在同一线程上下文中执行
+        boost::asio::post(strand_, [this, msg = std::move(message)]() mutable {
+            safeCallback(
+                [this](std::unique_ptr<protocol::IMessage>& msg) {
+                    callback_.onMessageReceived(std::move(msg));
+                },
+                "网络消息接收",
+                msg
+            );
+        });
     }
 
     // 继续接收
@@ -152,6 +214,13 @@ void AsioNetworkModel::handleSend(const boost::system::error_code& error, std::s
 
 void AsioNetworkModel::ioThreadFunc() {
     try {
+        // 使用 work guard 防止 io_context 在没有任务时退出
+        boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work_guard(io_context_.get_executor());
+
+        // 重置 io_context 以确保它可以重新运行
+        io_context_.restart();
+
+        // 运行 io_context
         io_context_.run();
     } catch (const std::exception& e) {
         std::cerr << "IO线程异常: " << e.what() << std::endl;

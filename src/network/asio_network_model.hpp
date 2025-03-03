@@ -17,28 +17,6 @@ public:
     virtual void onMessageReceived(std::unique_ptr<protocol::IMessage> message) = 0;
 };
 
-// /**
-//  * @brief 消息队列接口
-//  */
-// class MessageQueue {
-// public:
-//     virtual ~MessageQueue() = default;
-
-//     /**
-//      * @brief 将消息推入队列
-//      * @param message 消息对象
-//      */
-//     virtual void pushMessage(std::unique_ptr<protocol::IMessage> message) = 0;
-
-//     /**
-//      * @brief 从队列中取出消息
-//      * @param message 用于存储取出的消息
-//      * @param timeout 超时时间
-//      * @return 是否成功取出消息
-//      */
-//     virtual bool popMessage(std::unique_ptr<protocol::IMessage>& message, std::chrono::milliseconds timeout) = 0;
-// };
-
 /**
  * @brief 基于Boost.Asio的网络模型实现
  */
@@ -46,7 +24,7 @@ class AsioNetworkModel : public BaseNetworkModel {
 public:
     /**
      * @brief 构造函数
-     * @param message_queue 消息队列
+     * @param callback 网络回调接口
      */
     explicit AsioNetworkModel(INetworkCallback& callback);
 
@@ -108,12 +86,12 @@ private:
 
     boost::asio::io_context io_context_;
     boost::asio::ip::tcp::socket socket_;
+    boost::asio::io_context::strand strand_; // 用于序列化异步操作的执行器
     std::thread io_thread_;
     std::atomic<bool> connected_;
-    std::mutex mutex_;
+    // std::mutex mutex_;
     std::array<char, 4096> receive_buffer_;
     INetworkCallback& callback_;
-    // MessageQueue& message_queue_;
     std::string receive_data_;
 };
 
