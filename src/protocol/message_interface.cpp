@@ -1,5 +1,5 @@
-#include "i_message.hpp"
-#include "message_types.hpp"
+#include "message_interface.hpp"
+#include "messages.hpp"
 
 namespace protocol {
 

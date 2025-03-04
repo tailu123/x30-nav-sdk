@@ -6,7 +6,7 @@ X30 机器狗导航 SDK 采用了模块化、分层的架构设计，使其具�
 
 SDK 的整体架构采用了经典的 MVC（Model-View-Controller）设计模式，分为以下几个主要层次：
 
-1. **接口层（Interface Layer）**：提供给用户的公共 API，定义在 `include/dog_navigation/` 目录下
+1. **接口层（Interface Layer）**：提供给用户的公共 API，定义在 `include/` 目录下
 2. **控制层（Controller Layer）**：实现业务逻辑，协调各个组件的工作
 3. **网络层（Network Layer）**：负责与机器狗控制系统的网络通信
 4. **协议层（Protocol Layer）**：处理消息的序列化和反序列化
@@ -47,7 +47,7 @@ SDK 的整体架构采用了经典的 MVC（Model-View-Controller）设计模式
 - **NavigationSdk 类**：SDK 的主要入口点，提供所有功能的访问接口
 - **类型定义**：定义了各种数据结构、枚举类型和回调函数类型
 
-接口层的代码位于 `include/dog_navigation/` 目录下：
+接口层的代码位于 `include/` 目录下：
 
 - `navigation_sdk.h`：定义 NavigationSdk 类及其方法
 - `types.h`：定义各种数据结构和类型
@@ -85,8 +85,8 @@ SDK 的整体架构采用了经典的 MVC（Model-View-Controller）设计模式
 
 协议层的代码位于 `src/protocol/` 目录下：
 
-- `i_message.hpp` 和 `i_message.cpp`：定义消息的基本接口
-- `message_types.hpp` 和 `message_types.cpp`：定义各种消息类型
+- `message_interface.hpp` 和 `message_interface.cpp`：定义消息的基本接口
+- `messages.hpp` 和 `messages.cpp`：定义各种消息类型
 - `x30_protocol.hpp` 和 `x30_protocol.cpp`：实现 X30 协议的处理
 
 ### 5. 数据模型层（Model Layer）
@@ -99,7 +99,7 @@ SDK 的整体架构采用了经典的 MVC（Model-View-Controller）设计模式
 - **TaskStatusResult**：任务状态结果的数据结构
 - **各种枚举类型**：如 ErrorCode、NavigationStatus、EventType 等
 
-数据模型层的代码分布在 `include/dog_navigation/types.h` 和 `src/protocol/message_types.hpp` 文件中。
+数据模型层的代码分布在 `include/types.h` 和 `src/protocol/messages.hpp` 文件中。
 
 ## 类图
 ```mermaid

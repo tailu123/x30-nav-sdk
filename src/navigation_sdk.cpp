@@ -1,4 +1,4 @@
-#include <dog_navigation/navigation_sdk.h>
+#include <navigation_sdk.h>
 #include <chrono>
 #include <thread>
 #include <mutex>
@@ -18,7 +18,7 @@
 
 
 // using namespace network;
-namespace dog_navigation {
+namespace nav_sdk {
 
 // SDK版本
 static const std::string SDK_VERSION = "0.1.0";
@@ -570,4 +570,4 @@ std::string NavigationSdk::getVersion() {
     return SDK_VERSION;
 }
 
-} // namespace dog_navigation
+} // namespace nav_sdk

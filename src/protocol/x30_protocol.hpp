@@ -1,7 +1,7 @@
 #pragma once
 
-#include "i_message.hpp"
-#include "message_types.hpp"
+#include "message_interface.hpp"
+#include "messages.hpp"
 #include "protocol_header.hpp"
 #include <memory>
 #include <string>

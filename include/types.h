@@ -6,7 +6,7 @@
 #include <chrono>
 #include <memory>
 #include <nlohmann/json.hpp>
-namespace dog_navigation {
+namespace nav_sdk {
 
 /**
  * @brief 错误码枚举
@@ -175,4 +175,4 @@ using EventCallback = std::function<void(const Event&)>;
  */
 using NavigationResultCallback = std::function<void(const NavigationResult&)>;
 
-} // namespace dog_navigation
+} // namespace nav_sdk

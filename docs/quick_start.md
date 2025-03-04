@@ -51,21 +51,21 @@ sudo make install
 ### 1. 包含头文件
 
 ```cpp
-#include <dog_navigation/navigation_sdk.h>
+#include <navigation_sdk.h>
 ```
 
 ### 2. 创建 SDK 实例
 
 ```cpp
 // 创建 SDK 实例
-dog_navigation::NavigationSdk sdk;
+nav_sdk::NavigationSdk sdk;
 ```
 
 ### 3. 设置事件回调（可选）
 
 ```cpp
 // 设置事件回调函数
-sdk.setEventCallback([](const dog_navigation::Event& event) {
+sdk.setEventCallback([](const nav_sdk::Event& event) {
     std::cout << "收到事件: " << event.toString() << std::endl;
 });
 ```
@@ -92,8 +92,8 @@ std::cout << "当前位置: (" << status.posX << ", " << status.posY << ", " << 
 
 ```cpp
 // 创建导航点
-std::vector<dog_navigation::NavigationPoint> points;
-dog_navigation::NavigationPoint point;
+std::vector<nav_sdk::NavigationPoint> points;
+nav_sdk::NavigationPoint point;
 point.posX = 10.0;
 point.posY = 5.0;
 point.posZ = 0.0;
@@ -103,7 +103,7 @@ points.push_back(point);
 
 // 发送导航任务
 auto result = sdk.startNavigation(points);
-if (result.errorCode == dog_navigation::ErrorCode::SUCCESS) {
+if (result.errorCode == nav_sdk::ErrorCode::SUCCESS) {
     std::cout << "导航任务已启动，任务ID: " << result.value << std::endl;
 } else {
     std::cerr << "导航任务启动失败，错误码: " << static_cast<int>(result.errorCode) << std::endl;
@@ -114,8 +114,8 @@ if (result.errorCode == dog_navigation::ErrorCode::SUCCESS) {
 
 ```cpp
 // 异步发送导航任务
-sdk.startNavigationAsync(points, [](const dog_navigation::NavigationResult& result) {
-    if (result.errorCode == dog_navigation::ErrorCode::SUCCESS) {
+sdk.startNavigationAsync(points, [](const nav_sdk::NavigationResult& result) {
+    if (result.errorCode == nav_sdk::ErrorCode::SUCCESS) {
         std::cout << "导航任务已启动，任务ID: " << result.value << std::endl;
     } else {
         std::cerr << "导航任务启动失败，错误码: " << static_cast<int>(result.errorCode) << std::endl;
@@ -154,17 +154,17 @@ sdk.disconnect();
 以下是一个完整的示例程序，展示了如何使用 SDK 的基本功能：
 
 ```cpp
-#include <dog_navigation/navigation_sdk.h>
+#include <navigation_sdk.h>
 #include <iostream>
 #include <thread>
 #include <chrono>
 
 int main() {
     // 创建 SDK 实例
-    dog_navigation::NavigationSdk sdk;
+    nav_sdk::NavigationSdk sdk;
 
     // 设置事件回调
-    sdk.setEventCallback([](const dog_navigation::Event& event) {
+    sdk.setEventCallback([](const nav_sdk::Event& event) {
         std::cout << "收到事件: " << event.toString() << std::endl;
     });
 
@@ -179,8 +179,8 @@ int main() {
     std::cout << "当前位置: (" << status.posX << ", " << status.posY << ", " << status.posZ << ")" << std::endl;
 
     // 创建导航点
-    std::vector<dog_navigation::NavigationPoint> points;
-    dog_navigation::NavigationPoint point;
+    std::vector<nav_sdk::NavigationPoint> points;
+    nav_sdk::NavigationPoint point;
     point.posX = 10.0;
     point.posY = 5.0;
     point.posZ = 0.0;
@@ -190,7 +190,7 @@ int main() {
 
     // 发送导航任务
     auto result = sdk.startNavigation(points);
-    if (result.errorCode == dog_navigation::ErrorCode::SUCCESS) {
+    if (result.errorCode == nav_sdk::ErrorCode::SUCCESS) {
         std::cout << "导航任务已启动，任务ID: " << result.value << std::endl;
     } else {
         std::cerr << "导航任务启动失败，错误码: " << static_cast<int>(result.errorCode) << std::endl;

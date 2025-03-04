@@ -48,7 +48,7 @@ add_library(${PROJECT_NAME} SHARED ${SDK_SOURCES})
 set_target_properties(${PROJECT_NAME} PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION ${PROJECT_VERSION_MAJOR}
-    PUBLIC_HEADER "include/dog_navigation/navigation_sdk.h;include/dog_navigation/types.h;include/dog_navigation/navigation_sdk_v2.h;include/dog_navigation/types_v2.h"
+    PUBLIC_HEADER "include/navigation_sdk.h;include/types.h"
 )
 
 # 链接依赖库
@@ -63,7 +63,7 @@ install(TARGETS ${PROJECT_NAME}
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
     RUNTIME DESTINATION bin
-    PUBLIC_HEADER DESTINATION include/dog_navigation
+    PUBLIC_HEADER DESTINATION include
 )
 
 # 添加示例子目录

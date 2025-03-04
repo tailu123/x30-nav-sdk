@@ -1,11 +1,11 @@
 #pragma once
 
-#include <dog_navigation/types.h>
+#include <types.h>
 #include <memory>
 #include <string>
 #include <future>
 
-namespace dog_navigation {
+namespace nav_sdk {
 
 // 前向声明，隐藏实现细节
 class NavigationSdkImpl;
@@ -99,4 +99,4 @@ private:
     std::unique_ptr<NavigationSdkImpl> impl_; ///< PIMPL实现
 };
 
-} // namespace dog_navigation
+} // namespace nav_sdk

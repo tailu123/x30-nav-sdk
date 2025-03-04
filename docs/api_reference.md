@@ -505,15 +505,15 @@ std::string getErrorMessage(ErrorCode error);
 ### 同步方法示例
 
 ```cpp
-#include <dog_navigation/navigation_sdk.h>
+#include <navigation_sdk.h>
 #include <iostream>
 
 int main() {
     // 创建 SDK 实例
-    dog_navigation::NavigationSdk sdk;
+    nav_sdk::NavigationSdk sdk;
 
     // 设置事件回调
-    sdk.setEventCallback([](const dog_navigation::Event& event) {
+    sdk.setEventCallback([](const nav_sdk::Event& event) {
         std::cout << "事件: " << static_cast<int>(event.type) << ", 消息: " << event.message << std::endl;
     });
 
@@ -531,38 +531,38 @@ int main() {
     if (sdk.isConnected()) {
         // 获取实时状态
         auto [status, error] = sdk.getRealTimeStatus();
-        if (error == dog_navigation::ErrorCode::SUCCESS) {
+        if (error == nav_sdk::ErrorCode::SUCCESS) {
             std::cout << "纬度: " << status.latitude << ", 经度: " << status.longitude << std::endl;
             std::cout << "电池电量: " << status.battery_level << "%" << std::endl;
         } else {
-            std::cout << "获取实时状态失败: " << dog_navigation::getErrorMessage(error) << std::endl;
+            std::cout << "获取实时状态失败: " << nav_sdk::getErrorMessage(error) << std::endl;
         }
 
         // 创建导航点
-        std::vector<dog_navigation::NavigationPoint> points = {
+        std::vector<nav_sdk::NavigationPoint> points = {
             {39.9042, 116.4074, 0, 1.0, 90.0},  // 北京
             {31.2304, 121.4737, 0, 1.0, 180.0}  // 上海
         };
 
         // 开始导航任务
         auto [result, nav_error] = sdk.startNavigation(points);
-        if (nav_error == dog_navigation::ErrorCode::SUCCESS) {
+        if (nav_error == nav_sdk::ErrorCode::SUCCESS) {
             std::cout << "导航任务已开始，任务 ID: " << result.task_id << std::endl;
 
             // 查询任务状态
             auto [task_status, task_error] = sdk.queryTaskStatus(result.task_id);
-            if (task_error == dog_navigation::ErrorCode::SUCCESS) {
+            if (task_error == nav_sdk::ErrorCode::SUCCESS) {
                 std::cout << "任务状态: " << static_cast<int>(task_status.state) << std::endl;
                 std::cout << "任务进度: " << task_status.progress << "%" << std::endl;
             }
 
             // 取消任务
             auto [cancel_result, cancel_error] = sdk.cancelNavigation(result.task_id);
-            if (cancel_error == dog_navigation::ErrorCode::SUCCESS) {
+            if (cancel_error == nav_sdk::ErrorCode::SUCCESS) {
                 std::cout << "任务已取消" << std::endl;
             }
         } else {
-            std::cout << "开始导航任务失败: " << dog_navigation::getErrorMessage(nav_error) << std::endl;
+            std::cout << "开始导航任务失败: " << nav_sdk::getErrorMessage(nav_error) << std::endl;
         }
     }
 
@@ -576,49 +576,49 @@ int main() {
 ### 异步方法示例
 
 ```cpp
-#include <dog_navigation/navigation_sdk.h>
+#include <navigation_sdk.h>
 #include <iostream>
 #include <condition_variable>
 
 int main() {
     // 创建 SDK 实例
-    dog_navigation::NavigationSdk sdk;
+    nav_sdk::NavigationSdk sdk;
 
     std::mutex mutex;
     std::condition_variable cv;
     bool done = false;
 
     // 设置事件回调
-    sdk.setEventCallback([&](const dog_navigation::Event& event) {
+    sdk.setEventCallback([&](const nav_sdk::Event& event) {
         std::cout << "事件: " << static_cast<int>(event.type) << ", 消息: " << event.message << std::endl;
 
-        if (event.type == dog_navigation::EventType::CONNECTION_ESTABLISHED) {
+        if (event.type == nav_sdk::EventType::CONNECTION_ESTABLISHED) {
             // 连接已建立，获取实时状态
-            sdk.getRealTimeStatusAsync([&](const dog_navigation::RealTimeStatus& status, dog_navigation::ErrorCode error) {
-                if (error == dog_navigation::ErrorCode::SUCCESS) {
+            sdk.getRealTimeStatusAsync([&](const nav_sdk::RealTimeStatus& status, nav_sdk::ErrorCode error) {
+                if (error == nav_sdk::ErrorCode::SUCCESS) {
                     std::cout << "纬度: " << status.latitude << ", 经度: " << status.longitude << std::endl;
                     std::cout << "电池电量: " << status.battery_level << "%" << std::endl;
 
                     // 创建导航点
-                    std::vector<dog_navigation::NavigationPoint> points = {
+                    std::vector<nav_sdk::NavigationPoint> points = {
                         {39.9042, 116.4074, 0, 1.0, 90.0},  // 北京
                         {31.2304, 121.4737, 0, 1.0, 180.0}  // 上海
                     };
 
                     // 开始导航任务
-                    sdk.startNavigationAsync(points, [&](const dog_navigation::NavigationResult& result, dog_navigation::ErrorCode nav_error) {
-                        if (nav_error == dog_navigation::ErrorCode::SUCCESS) {
+                    sdk.startNavigationAsync(points, [&](const nav_sdk::NavigationResult& result, nav_sdk::ErrorCode nav_error) {
+                        if (nav_error == nav_sdk::ErrorCode::SUCCESS) {
                             std::cout << "导航任务已开始，任务 ID: " << result.task_id << std::endl;
 
                             // 查询任务状态
-                            sdk.queryTaskStatusAsync(result.task_id, [&](const dog_navigation::TaskStatus& task_status, dog_navigation::ErrorCode task_error) {
-                                if (task_error == dog_navigation::ErrorCode::SUCCESS) {
+                            sdk.queryTaskStatusAsync(result.task_id, [&](const nav_sdk::TaskStatus& task_status, nav_sdk::ErrorCode task_error) {
+                                if (task_error == nav_sdk::ErrorCode::SUCCESS) {
                                     std::cout << "任务状态: " << static_cast<int>(task_status.state) << std::endl;
                                     std::cout << "任务进度: " << task_status.progress << "%" << std::endl;
 
                                     // 取消任务
-                                    sdk.cancelNavigationAsync(result.task_id, [&](const dog_navigation::CancelResult& cancel_result, dog_navigation::ErrorCode cancel_error) {
-                                        if (cancel_error == dog_navigation::ErrorCode::SUCCESS) {
+                                    sdk.cancelNavigationAsync(result.task_id, [&](const nav_sdk::CancelResult& cancel_result, nav_sdk::ErrorCode cancel_error) {
+                                        if (cancel_error == nav_sdk::ErrorCode::SUCCESS) {
                                             std::cout << "任务已取消" << std::endl;
                                         }
 
@@ -666,15 +666,15 @@ SDK 使用 `ErrorCode` 枚举表示操作结果。每个同步方法都返回一
 ```cpp
 // 同步方法错误处理
 auto [status, error] = sdk.getRealTimeStatus();
-if (error != dog_navigation::ErrorCode::SUCCESS) {
-    std::cerr << "获取实时状态失败: " << dog_navigation::getErrorMessage(error) << std::endl;
+if (error != nav_sdk::ErrorCode::SUCCESS) {
+    std::cerr << "获取实时状态失败: " << nav_sdk::getErrorMessage(error) << std::endl;
     // 处理错误
 }
 
 // 异步方法错误处理
-sdk.getRealTimeStatusAsync([](const dog_navigation::RealTimeStatus& status, dog_navigation::ErrorCode error) {
-    if (error != dog_navigation::ErrorCode::SUCCESS) {
-        std::cerr << "获取实时状态失败: " << dog_navigation::getErrorMessage(error) << std::endl;
+sdk.getRealTimeStatusAsync([](const nav_sdk::RealTimeStatus& status, nav_sdk::ErrorCode error) {
+    if (error != nav_sdk::ErrorCode::SUCCESS) {
+        std::cerr << "获取实时状态失败: " << nav_sdk::getErrorMessage(error) << std::endl;
         // 处理错误
     }
 });

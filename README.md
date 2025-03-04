@@ -37,16 +37,16 @@ make install
 以下是一个简单的示例，展示如何使用 SDK 连接到机器狗并发送导航任务：
 
 ```cpp
-#include <dog_navigation/navigation_sdk.h>
-#include <dog_navigation/types.h>
+#include <navigation_sdk.h>
+#include <types.h>
 #include <iostream>
 
 int main() {
     // 创建 SDK 实例
-    dog_navigation::NavigationSdk sdk;
+    nav_sdk::NavigationSdk sdk;
 
     // 设置事件回调
-    sdk.setEventCallback([](const dog_navigation::Event& event) {
+    sdk.setEventCallback([](const nav_sdk::Event& event) {
         std::cout << "收到事件: " << event.toString() << std::endl;
     });
 
@@ -61,8 +61,8 @@ int main() {
     std::cout << "当前位置: (" << status.posX << ", " << status.posY << ", " << status.posZ << ")" << std::endl;
 
     // 创建导航点
-    std::vector<dog_navigation::NavigationPoint> points;
-    dog_navigation::NavigationPoint point;
+    std::vector<nav_sdk::NavigationPoint> points;
+    nav_sdk::NavigationPoint point;
     point.posX = 10.0;
     point.posY = 5.0;
     point.posZ = 0.0;
@@ -72,7 +72,7 @@ int main() {
 
     // 发送导航任务
     auto result = sdk.startNavigation(points);
-    if (result.errorCode == dog_navigation::ErrorCode::SUCCESS) {
+    if (result.errorCode == nav_sdk::ErrorCode::SUCCESS) {
         std::cout << "导航任务已启动，任务ID: " << result.taskId << std::endl;
     } else {
         std::cerr << "导航任务启动失败，错误码: " << static_cast<int>(result.errorCode) << std::endl;

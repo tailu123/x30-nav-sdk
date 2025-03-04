@@ -1,6 +1,6 @@
 #pragma once
 
-#include "i_message.hpp"
+#include "message_interface.hpp"
 #include <vector>
 #include <string>
 #include <chrono>

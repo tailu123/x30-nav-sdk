@@ -1,6 +1,6 @@
 #include <cstdint>
-#include <dog_navigation/navigation_sdk.h>
-#include <dog_navigation/types.h>
+#include <navigation_sdk.h>
+#include <types.h>
 #include <iostream>
 #include <thread>
 #include <chrono>
@@ -10,8 +10,8 @@
 #include <filesystem>
 #include <fstream>
 
-std::vector<dog_navigation::NavigationPoint> loadDefaultNavigationPoints(const std::string& configPath) {
-    std::vector<dog_navigation::NavigationPoint> points;
+std::vector<nav_sdk::NavigationPoint> loadDefaultNavigationPoints(const std::string& configPath) {
+    std::vector<nav_sdk::NavigationPoint> points;
     try {
         // 检查文件是否存在
         if (!std::filesystem::exists(configPath)) {
@@ -26,7 +26,7 @@ std::vector<dog_navigation::NavigationPoint> loadDefaultNavigationPoints(const s
 
         // 解析每个导航点
         for (const auto& jsonPoint : jsonArray) {
-            points.push_back(dog_navigation::NavigationPoint::fromJson(jsonPoint));
+            points.push_back(nav_sdk::NavigationPoint::fromJson(jsonPoint));
         }
 
         // spdlog::info("[{}]: [Utils:INFO]: 成功从配置文件加载了 {} 个导航点", common::getCurrentTimestamp(),
@@ -41,22 +41,22 @@ std::vector<dog_navigation::NavigationPoint> loadDefaultNavigationPoints(const s
 }
 
 // 辅助函数：加载默认导航点
-std::vector<dog_navigation::NavigationPoint> loadNavigationPoints() {
+std::vector<nav_sdk::NavigationPoint> loadNavigationPoints() {
     std::filesystem::path exePath = std::filesystem::canonical("/proc/self/exe");
     std::filesystem::path projectRoot = exePath.parent_path().parent_path();
     std::filesystem::path configPath = projectRoot / "default_params.json";
 
-    static std::vector<dog_navigation::NavigationPoint> points = loadDefaultNavigationPoints(configPath.string());
+    static std::vector<nav_sdk::NavigationPoint> points = loadDefaultNavigationPoints(configPath.string());
     return points;
 }
 
-std::vector<dog_navigation::NavigationPoint> g_points = loadNavigationPoints();
+std::vector<nav_sdk::NavigationPoint> g_points = loadNavigationPoints();
 
 /**
  * @brief 打印实时状态信息
  * @param status 实时状态信息
  */
-void printStatus(const dog_navigation::RealTimeStatus& status) {
+void printStatus(const nav_sdk::RealTimeStatus& status) {
     std::cout << "===== 实时状态信息 =====" << std::endl;
     std::cout << "位置: (" << status.posX << ", " << status.posY << ", " << status.posZ << ")" << std::endl;
     std::cout << "角度: " << status.angleYaw << "°" << std::endl;
@@ -70,19 +70,19 @@ void printStatus(const dog_navigation::RealTimeStatus& status) {
  * @brief 打印任务状态信息
  * @param status 任务状态查询结果
  */
-void printTaskStatus(const dog_navigation::TaskStatusResult& status) {
+void printTaskStatus(const nav_sdk::TaskStatusResult& status) {
     std::cout << "===== 任务状态信息 =====" << std::endl;
     std::cout << "目标点编号: " << status.value << std::endl;
     std::cout << "状态: ";
 
     switch (status.status) {
-        case dog_navigation::NavigationStatus::COMPLETED:
+        case nav_sdk::NavigationStatus::COMPLETED:
             std::cout << "已完成" << std::endl;
             break;
-        case dog_navigation::NavigationStatus::EXECUTING:
+        case nav_sdk::NavigationStatus::EXECUTING:
             std::cout << "执行中" << std::endl;
             break;
-        case dog_navigation::NavigationStatus::FAILED:
+        case nav_sdk::NavigationStatus::FAILED:
             std::cout << "失败" << std::endl;
             break;
     }
@@ -96,7 +96,7 @@ void printTaskStatus(const dog_navigation::TaskStatusResult& status) {
  * @brief 打印导航结果
  * @param result 导航任务结果
  */
-void printNavigationResult(const dog_navigation::NavigationResult& result) {
+void printNavigationResult(const nav_sdk::NavigationResult& result) {
     std::cout << "===== 导航任务结果 =====" << std::endl;
     std::cout << "目标点编号: " << result.value << std::endl;
     std::cout << "错误码: " << static_cast<int>(result.errorCode) << std::endl;
@@ -109,7 +109,7 @@ void printNavigationResult(const dog_navigation::NavigationResult& result) {
  * @brief 事件回调函数
  * @param event 事件信息
  */
-void onEvent(const dog_navigation::Event& event) {
+void onEvent(const nav_sdk::Event& event) {
     std::cout << "收到事件: " << event.toString() << std::endl;
 }
 
@@ -124,16 +124,16 @@ int main(int argc, char* argv[]) {
     uint16_t port = static_cast<uint16_t>(std::stoi(argv[2]));
 
     std::cout << "X30 机器狗导航 SDK 示例程序" << std::endl;
-    std::cout << "SDK 版本: " << dog_navigation::NavigationSdk::getVersion() << std::endl;
+    std::cout << "SDK 版本: " << nav_sdk::NavigationSdk::getVersion() << std::endl;
     std::cout << "连接到: " << host << ":" << port << std::endl;
 
     try {
         // 创建 SDK 实例
-        dog_navigation::SdkOptions options;
+        nav_sdk::SdkOptions options;
         options.connectionTimeout = std::chrono::milliseconds(3000);
         options.requestTimeout = std::chrono::milliseconds(3000);
 
-        dog_navigation::NavigationSdk sdk(options);
+        nav_sdk::NavigationSdk sdk(options);
 
         // 设置事件回调
         sdk.setEventCallback(onEvent);
@@ -147,19 +147,19 @@ int main(int argc, char* argv[]) {
         std::cout << "连接成功!" << std::endl;
 
         // 获取初始实时状态
-        dog_navigation::RealTimeStatus status = sdk.getRealTimeStatus();
+        nav_sdk::RealTimeStatus status = sdk.getRealTimeStatus();
         std::cout << "getRealTimeStatus complete" << std::endl;
         printStatus(status);
 
         // 创建导航点
-        std::vector<dog_navigation::NavigationPoint> points = g_points;
+        std::vector<nav_sdk::NavigationPoint> points = g_points;
 
         // 标记是否收到导航响应
         std::atomic<bool> navigationResponseReceived{false};
 
         // 异步发送导航任务（使用回调形式）
         std::cout << "开始导航任务..." << std::endl;
-        sdk.startNavigationAsync(points, [&](const dog_navigation::NavigationResult& result) {
+        sdk.startNavigationAsync(points, [&](const nav_sdk::NavigationResult& result) {
             // 打印导航任务结果
             printNavigationResult(result);
 
