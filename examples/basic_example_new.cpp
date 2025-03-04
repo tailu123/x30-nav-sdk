@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <dog_navigation/navigation_sdk.h>
 #include <dog_navigation/types.h>
 #include <iostream>
@@ -6,6 +7,50 @@
 #include <atomic>
 #include <mutex>
 #include <condition_variable>
+#include <filesystem>
+#include <fstream>
+
+std::vector<dog_navigation::NavigationPoint> loadDefaultNavigationPoints(const std::string& configPath) {
+    std::vector<dog_navigation::NavigationPoint> points;
+    try {
+        // 检查文件是否存在
+        if (!std::filesystem::exists(configPath)) {
+            std::cerr << "配置文件不存在: " << configPath << std::endl;
+            return points;
+        }
+
+        // 读取JSON文件
+        std::ifstream file(configPath);
+        nlohmann::json jsonArray;
+        file >> jsonArray;
+
+        // 解析每个导航点
+        for (const auto& jsonPoint : jsonArray) {
+            points.push_back(dog_navigation::NavigationPoint::fromJson(jsonPoint));
+        }
+
+        // spdlog::info("[{}]: [Utils:INFO]: 成功从配置文件加载了 {} 个导航点", common::getCurrentTimestamp(),
+        //              points.size());
+        std::cout << "成功从配置文件加载了 " << points.size() << " 个导航点" << std::endl;
+    }
+    catch (const std::exception& e) {
+        // spdlog::error("[Utils:ERR]: 加载配置文件失败: {}", e.what());
+        std::cerr << "加载配置文件失败: " << e.what() << std::endl;
+    }
+    return points;
+}
+
+// 辅助函数：加载默认导航点
+std::vector<dog_navigation::NavigationPoint> loadNavigationPoints() {
+    std::filesystem::path exePath = std::filesystem::canonical("/proc/self/exe");
+    std::filesystem::path projectRoot = exePath.parent_path().parent_path();
+    std::filesystem::path configPath = projectRoot / "default_params.json";
+
+    static std::vector<dog_navigation::NavigationPoint> points = loadDefaultNavigationPoints(configPath.string());
+    return points;
+}
+
+std::vector<dog_navigation::NavigationPoint> g_points = loadNavigationPoints();
 
 /**
  * @brief 打印实时状态信息
@@ -43,7 +88,7 @@ void printTaskStatus(const dog_navigation::TaskStatusResult& status) {
     }
 
     std::cout << "错误码: " << static_cast<int>(status.errorCode) << std::endl;
-    std::cout << "时间戳: " << status.timestamp << std::endl;
+    // std::cout << "时间戳: " << status.timestamp << std::endl;
     std::cout << "========================" << std::endl;
 }
 
@@ -56,7 +101,7 @@ void printNavigationResult(const dog_navigation::NavigationResult& result) {
     std::cout << "目标点编号: " << result.value << std::endl;
     std::cout << "错误码: " << static_cast<int>(result.errorCode) << std::endl;
     std::cout << "错误状态: " << result.errorStatus << std::endl;
-    std::cout << "时间戳: " << result.timestamp << std::endl;
+    // std::cout << "时间戳: " << result.timestamp << std::endl;
     std::cout << "========================" << std::endl;
 }
 
@@ -87,7 +132,6 @@ int main(int argc, char* argv[]) {
         dog_navigation::SdkOptions options;
         options.connectionTimeout = std::chrono::milliseconds(3000);
         options.requestTimeout = std::chrono::milliseconds(3000);
-        options.enableLogging = true;
 
         dog_navigation::NavigationSdk sdk(options);
 
@@ -103,18 +147,12 @@ int main(int argc, char* argv[]) {
         std::cout << "连接成功!" << std::endl;
 
         // 获取初始实时状态
-        auto status = sdk.getRealTimeStatus();
+        dog_navigation::RealTimeStatus status = sdk.getRealTimeStatus();
+        std::cout << "getRealTimeStatus complete" << std::endl;
         printStatus(status);
 
         // 创建导航点
-        std::vector<dog_navigation::NavigationPoint> points;
-        dog_navigation::NavigationPoint point;
-        point.posX = 10.0;
-        point.posY = 5.0;
-        point.posZ = 0.0;
-        point.angleYaw = 90.0;
-        point.speed = 2;
-        points.push_back(point);
+        std::vector<dog_navigation::NavigationPoint> points = g_points;
 
         // 标记是否收到导航响应
         std::atomic<bool> navigationResponseReceived{false};
@@ -131,7 +169,7 @@ int main(int argc, char* argv[]) {
 
         // 轮询查询任务状态和实时状态，直到收到导航响应
         int pollCount = 0;
-        const int MAX_POLL_COUNT = 30; // 最多轮询30次
+        const int MAX_POLL_COUNT = 120; // 最多轮询120次
         const auto POLL_INTERVAL = std::chrono::milliseconds(1000); // 轮询间隔1秒
 
         while (!navigationResponseReceived && pollCount < MAX_POLL_COUNT) {

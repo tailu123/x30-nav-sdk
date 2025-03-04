@@ -101,6 +101,88 @@ SDK 的整体架构采用了经典的 MVC（Model-View-Controller）设计模式
 
 数据模型层的代码分布在 `include/dog_navigation/types.h` 和 `src/protocol/message_types.hpp` 文件中。
 
+## 类图
+```mermaid
+classDiagram
+    %% 接口层
+    class NavigationSdk {
+        -NavigationSdkImpl* impl_
+        +connect(host: string, port: uint16_t)
+        +disconnect()
+        +isConnected()
+        +setEventCallback(callback: EventCallback)
+        +getRealTimeStatus()
+        +startNavigationAsync(points: vector<NavigationPoint>, callback: NavigationResultCallback)
+        +cancelNavigation()
+        +queryTaskStatus()
+        +getVersion()
+    }
+
+    %% 网络层
+    class INetworkCallback {
+        <<interface>>
+        +onMessageReceived(message: unique_ptr<IMessage>)*
+    }
+
+    class AsioNetworkModel {
+        -io_context_: boost::asio::io_context
+        -socket_: boost::asio::ip::tcp::socket
+        -strand_: boost::asio::io_context::strand
+        +connect(host: string, port: uint16_t)
+        +disconnect()
+        +sendMessage(message: IMessage)
+        -handleReceive()
+        -handleSend()
+    }
+
+    %% 协议层
+    class IMessage {
+        <<interface>>
+        +getType()*
+        +getSequenceNumber()*
+        +setSequenceNumber(seqNum: uint16_t)*
+    }
+
+    class X30Protocol {
+        +serializeMessage(message: IMessage)
+        +parseReceivedData(data: string)
+    }
+
+    %% 实现层
+    class NavigationSdkImpl {
+        -network_model_: unique_ptr<AsioNetworkModel>
+        -connected_: atomic<bool>
+        -event_callback_: EventCallback
+        +onMessageReceived(message: unique_ptr<IMessage>)
+        -handlePendingRequests()
+        -generateSequenceNumber()
+    }
+
+    %% 关系定义
+    NavigationSdk *-- NavigationSdkImpl
+    NavigationSdkImpl ..|> INetworkCallback
+    NavigationSdkImpl *-- AsioNetworkModel
+    AsioNetworkModel ..> X30Protocol
+    X30Protocol ..> IMessage
+
+    %% 依赖关系
+    %% AsioNetworkModel ..> IMessage
+    AsioNetworkModel ..> INetworkCallback
+```
+类图说明：
+
+1. **NavigationSdk** 是 SDK 的主要入口点，通过 PIMPL 模式封装了具体实现
+2. **NavigationSdkImpl** 实现了核心业务逻辑，并实现了 INetworkCallback 接口
+3. **AsioNetworkModel** 是基于 Boost.Asio 的具体网络实现
+4. **IMessage** 是所有消息类型的基础接口
+5. **X30Protocol** 负责消息的序列化和反序列化
+
+关系说明：
+- `*--` 表示组合关系（实心菱形）
+- `--|>` 表示继承关系（空心三角形）
+- `..|>` 表示接口实现（虚线空心三角形）
+- `..>` 表示依赖关系（虚线箭头）
+
 ## 数据流
 
 以下是 SDK 中数据流的基本流程：
@@ -116,6 +198,31 @@ SDK 的整体架构采用了经典的 MVC（Model-View-Controller）设计模式
    - X30Protocol 解析数据并创建响应消息
    - NavigationSdkImpl 处理响应消息
    - 结果返回给用户或通过回调函数通知用户
+
+3. **时序图**
+```mermaid
+sequenceDiagram
+    participant App as 应用程序
+    participant SDK as NavigationSdk
+    participant Impl as NavigationSdkImpl
+    participant Proto as X30Protocol
+    participant Net as AsioNetworkModel
+    participant Dog as 机器狗系统
+
+    App->>SDK: 调用API
+    SDK->>Impl: 转发请求
+    Impl->>Proto: 创建请求消息
+    Proto->>Proto: 序列化消息
+    Proto->>Net: 传递序列化数据
+    Net->>Dog: 发送网络数据
+
+    Dog-->>Net: 返回响应数据
+    Net-->>Proto: 传递原始数据
+    Proto-->>Proto: 解析响应数据
+    Proto-->>Impl: 创建响应消息
+    Impl-->>SDK: 处理响应
+    SDK-->>App: 返回结果
+```
 
 ## 设计特点
 

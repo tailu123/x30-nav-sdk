@@ -5,7 +5,7 @@
 #include <vector>
 #include <chrono>
 #include <memory>
-
+#include <nlohmann/json.hpp>
 namespace dog_navigation {
 
 /**
@@ -61,8 +61,29 @@ struct NavigationPoint {
     int navMode = 0;     ///< 导航模式
     int terrain = 0;     ///< 地形
     int posture = 0;     ///< 姿态
+
+    static NavigationPoint fromJson(const nlohmann::json& json) {
+        NavigationPoint point;
+        point.mapId = json.value("MapID", 0);
+        point.value = json.value("Value", 0);
+        point.posX = json.value("PosX", 0.0);
+        point.posY = json.value("PosY", 0.0);
+        point.posZ = json.value("PosZ", 0.0);
+        point.angleYaw = json.value("AngleYaw", 0.0);
+        point.pointInfo = json.value("PointInfo", 0);
+        point.gait = json.value("Gait", 0);
+        point.speed = json.value("Speed", 0);
+        point.manner = json.value("Manner", 0);
+        point.obsMode = json.value("ObsMode", 0);
+        point.navMode = json.value("NavMode", 0);
+        point.terrain = json.value("Terrain", 0);
+        point.posture = json.value("Posture", 0);
+        return point;
+    }
 };
 
+
+#pragma pack(push, 1)
 /**
  * @brief 实时状态信息
  */
@@ -95,7 +116,7 @@ struct RealTimeStatus {
     int mapUpdateState = 0;             ///< 地图更新状态
     std::string timestamp;              ///< 时间戳
 };
-
+#pragma pack(pop)
 /**
  * @brief 导航任务结果
  */
@@ -137,11 +158,11 @@ struct Event {
 struct SdkOptions {
     std::chrono::milliseconds connectionTimeout{5000}; ///< 连接超时时间
     std::chrono::milliseconds requestTimeout{3000};    ///< 请求超时时间
-    bool autoReconnect = true;                         ///< 是否自动重连
-    int maxReconnectAttempts = 3;                      ///< 最大重连尝试次数
-    std::chrono::milliseconds reconnectInterval{1000}; ///< 重连间隔
-    bool enableLogging = false;                        ///< 是否启用日志
-    std::string logLevel = "info";                     ///< 日志级别
+    // bool autoReconnect = true;                         ///< 是否自动重连
+    // int maxReconnectAttempts = 3;                      ///< 最大重连尝试次数
+    // std::chrono::milliseconds reconnectInterval{1000}; ///< 重连间隔
+    // bool enableLogging = false;                        ///< 是否启用日志
+    // std::string logLevel = "info";                     ///< 日志级别
 };
 
 /**
@@ -150,23 +171,8 @@ struct SdkOptions {
 using EventCallback = std::function<void(const Event&)>;
 
 /**
- * @brief 实时状态回调函数类型
- */
-using RealTimeStatusCallback = std::function<void(const RealTimeStatus&, ErrorCode)>;
-
-/**
  * @brief 导航任务结果回调函数类型
  */
 using NavigationResultCallback = std::function<void(const NavigationResult&)>;
-
-/**
- * @brief 任务状态查询结果回调函数类型
- */
-using TaskStatusResultCallback = std::function<void(const TaskStatusResult&, ErrorCode)>;
-
-/**
- * @brief 操作结果回调函数类型
- */
-using OperationResultCallback = std::function<void(bool, ErrorCode)>;
 
 } // namespace dog_navigation

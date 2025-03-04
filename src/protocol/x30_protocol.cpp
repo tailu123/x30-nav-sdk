@@ -47,6 +47,7 @@ std::unique_ptr<IMessage> X30Protocol::parseReceivedData(const std::string& data
 
         // 反序列化消息
         if (!message->deserialize(message_body)) {
+            std::cerr << "反序列化消息失败" << std::endl;
             return nullptr;
         }
 
@@ -87,25 +88,6 @@ MessageType X30Protocol::extractMessageType(const std::string& data) {
             // 根据Type确定消息类型
             return determineMessageType(type);
         }
-
-        // 如果不是XML格式，尝试解析为JSON格式（兼容旧代码）
-        // auto j = nlohmann::json::parse(data);
-
-        // 根据消息内容判断类型
-        // if (j.contains("motionState") && j.contains("posX")) {
-        //     return MessageType::GET_REAL_TIME_STATUS_RESP;
-        // } else if (j.contains("points")) {
-        //     return MessageType::NAVIGATION_TASK_REQ;
-        // } else if (j.contains("value") && j.contains("errorCode") && j.contains("errorStatus")) {
-        //     return MessageType::NAVIGATION_TASK_RESP;
-        // } else if (j.contains("value") && j.contains("status")) {
-        //     return MessageType::QUERY_STATUS_RESP;
-        // } else if (j.contains("errorCode") && !j.contains("value")) {
-        //     return MessageType::CANCEL_TASK_RESP;
-        // } else if (j.contains("timestamp") && j.size() == 1) {
-        //     // 这里无法区分几种只有timestamp的请求，默认返回获取实时状态请求
-        //     return MessageType::GET_REAL_TIME_STATUS_REQ;
-        // }
 
         return MessageType::UNKNOWN;
     } catch (const std::exception& e) {
@@ -179,12 +161,6 @@ MessageType X30Protocol::determineMessageType(int type) {
         return MessageType::UNKNOWN;
     }
 
-    // 检查是否有Items节点，如果没有或为空，则为请求消息
-    // 由于请求和响应的 command 都是 1，不再使用 command 进行判断
-    // 这里简化处理，根据 XML 中是否包含 Items 节点来判断是请求还是响应
-    // 实际应用中可能需要更复杂的逻辑
-
-    // 默认返回响应消息类型
     return it->second.second;
 }
 

@@ -83,35 +83,26 @@ public:
         return ss.str();
     }
 
-    bool deserialize(const std::string& data) override {
-        try {
-            // 检查是否为XML格式
-            if (data.find("<?xml") != std::string::npos || data.find("<PatrolDevice>") != std::string::npos) {
-                rapidxml::xml_document<> doc;
-                std::vector<char> buffer(data.begin(), data.end());
-                buffer.push_back('\0');
-                doc.parse<rapidxml::parse_non_destructive>(&buffer[0]);
+    bool deserialize(const std::string&) override {
+        return false;
+        // try {
+        //     rapidxml::xml_document<> doc;
+        //     std::vector<char> buffer(data.begin(), data.end());
+        //     buffer.push_back('\0');
+        //     doc.parse<rapidxml::parse_non_destructive>(&buffer[0]);
 
-                rapidxml::xml_node<>* root = doc.first_node("PatrolDevice");
-                if (!root) return false;
+        //     rapidxml::xml_node<>* root = doc.first_node("PatrolDevice");
+        //     if (!root) return false;
 
-                rapidxml::xml_node<>* time_node = root->first_node("Time");
-                if (time_node) {
-                    timestamp = time_node->value();
-                }
+        //     rapidxml::xml_node<>* time_node = root->first_node("Time");
+        //     if (time_node) {
+        //         timestamp = time_node->value();
+        //     }
 
-                return true;
-            } else {
-                // 兼容JSON格式
-                auto j = nlohmann::json::parse(data);
-                if (j.contains("timestamp")) {
-                    timestamp = j["timestamp"];
-                }
-                return true;
-            }
-        } catch (const std::exception& e) {
-            return false;
-        }
+        //     return true;
+        // } catch (const std::exception& e) {
+        //     return false;
+        // }
     }
 };
 
@@ -196,95 +187,59 @@ public:
 
     bool deserialize(const std::string& data) override {
         try {
-            // 检查是否为XML格式
-            if (data.find("<?xml") != std::string::npos || data.find("<PatrolDevice>") != std::string::npos) {
-                rapidxml::xml_document<> doc;
-                std::vector<char> buffer(data.begin(), data.end());
-                buffer.push_back('\0');
-                doc.parse<rapidxml::parse_non_destructive>(&buffer[0]);
+            rapidxml::xml_document<> doc;
+            std::vector<char> buffer(data.begin(), data.end());
+            buffer.push_back('\0');
+            doc.parse<rapidxml::parse_non_destructive>(&buffer[0]);
 
-                rapidxml::xml_node<>* root = doc.first_node("PatrolDevice");
-                if (!root) return false;
+            rapidxml::xml_node<>* root = doc.first_node("PatrolDevice");
+            if (!root) return false;
 
-                rapidxml::xml_node<>* time_node = root->first_node("Time");
-                if (time_node) {
-                    timestamp = time_node->value();
-                }
-
-                rapidxml::xml_node<>* items_node = root->first_node("Items");
-                if (!items_node) return false;
-
-                // 解析各个字段
-                auto get_node_value = [&](const char* name, auto& value) {
-                    rapidxml::xml_node<>* node = items_node->first_node(name);
-                    if (node) {
-                        std::stringstream ss(node->value());
-                        ss >> value;
-                    }
-                };
-
-                get_node_value("MotionState", motionState);
-                get_node_value("PosX", posX);
-                get_node_value("PosY", posY);
-                get_node_value("PosZ", posZ);
-                get_node_value("AngleYaw", angleYaw);
-                get_node_value("Roll", roll);
-                get_node_value("Pitch", pitch);
-                get_node_value("Yaw", yaw);
-                get_node_value("Speed", speed);
-                get_node_value("CurOdom", curOdom);
-                get_node_value("SumOdom", sumOdom);
-                get_node_value("CurRuntime", curRuntime);
-                get_node_value("SumRuntime", sumRuntime);
-                get_node_value("Res", res);
-                get_node_value("X0", x0);
-                get_node_value("Y0", y0);
-                get_node_value("H", h);
-                get_node_value("Electricity", electricity);
-                get_node_value("Location", location);
-                get_node_value("RTKState", RTKState);
-                get_node_value("OnDockState", onDockState);
-                get_node_value("GaitState", gaitState);
-                get_node_value("MotorState", motorState);
-                get_node_value("ChargeState", chargeState);
-                get_node_value("ControlMode", controlMode);
-                get_node_value("MapUpdateState", mapUpdateState);
-
-                return true;
-            } else {
-                // 兼容JSON格式
-                auto j = nlohmann::json::parse(data);
-
-                motionState = j["motionState"];
-                posX = j["posX"];
-                posY = j["posY"];
-                posZ = j["posZ"];
-                angleYaw = j["angleYaw"];
-                roll = j["roll"];
-                pitch = j["pitch"];
-                yaw = j["yaw"];
-                speed = j["speed"];
-                curOdom = j["curOdom"];
-                sumOdom = j["sumOdom"];
-                curRuntime = j["curRuntime"];
-                sumRuntime = j["sumRuntime"];
-                res = j["res"];
-                x0 = j["x0"];
-                y0 = j["y0"];
-                h = j["h"];
-                electricity = j["electricity"];
-                location = j["location"];
-                RTKState = j["RTKState"];
-                onDockState = j["onDockState"];
-                gaitState = j["gaitState"];
-                motorState = j["motorState"];
-                chargeState = j["chargeState"];
-                controlMode = j["controlMode"];
-                mapUpdateState = j["mapUpdateState"];
-                timestamp = j["timestamp"];
-
-                return true;
+            rapidxml::xml_node<>* time_node = root->first_node("Time");
+            if (time_node) {
+                timestamp = time_node->value();
             }
+
+            rapidxml::xml_node<>* items_node = root->first_node("Items");
+            if (!items_node) return false;
+
+            // 解析各个字段
+            auto get_node_value = [&](const char* name, auto& value) {
+                rapidxml::xml_node<>* node = items_node->first_node(name);
+                if (node) {
+                    std::stringstream ss(node->value());
+                    ss >> value;
+                }
+            };
+
+            get_node_value("MotionState", motionState);
+            get_node_value("PosX", posX);
+            get_node_value("PosY", posY);
+            get_node_value("PosZ", posZ);
+            get_node_value("AngleYaw", angleYaw);
+            get_node_value("Roll", roll);
+            get_node_value("Pitch", pitch);
+            get_node_value("Yaw", yaw);
+            get_node_value("Speed", speed);
+            get_node_value("CurOdom", curOdom);
+            get_node_value("SumOdom", sumOdom);
+            get_node_value("CurRuntime", curRuntime);
+            get_node_value("SumRuntime", sumRuntime);
+            get_node_value("Res", res);
+            get_node_value("X0", x0);
+            get_node_value("Y0", y0);
+            get_node_value("H", h);
+            get_node_value("Electricity", electricity);
+            get_node_value("Location", location);
+            get_node_value("RTKState", RTKState);
+            get_node_value("OnDockState", onDockState);
+            get_node_value("GaitState", gaitState);
+            get_node_value("MotorState", motorState);
+            get_node_value("ChargeState", chargeState);
+            get_node_value("ControlMode", controlMode);
+            get_node_value("MapUpdateState", mapUpdateState);
+
+            return true;
         } catch (const std::exception& e) {
             return false;
         }
@@ -338,97 +293,63 @@ public:
         return ss.str();
     }
 
-    bool deserialize(const std::string& data) override {
-        try {
-            // 检查是否为XML格式
-            if (data.find("<?xml") != std::string::npos || data.find("<PatrolDevice>") != std::string::npos) {
-                rapidxml::xml_document<> doc;
-                std::vector<char> buffer(data.begin(), data.end());
-                buffer.push_back('\0');
-                doc.parse<rapidxml::parse_non_destructive>(&buffer[0]);
+    bool deserialize(const std::string&) override {
+        return false;
+        // try {
+        //     rapidxml::xml_document<> doc;
+        //     std::vector<char> buffer(data.begin(), data.end());
+        //     buffer.push_back('\0');
+        //     doc.parse<rapidxml::parse_non_destructive>(&buffer[0]);
 
-                rapidxml::xml_node<>* root = doc.first_node("PatrolDevice");
-                if (!root) return false;
+        //     rapidxml::xml_node<>* root = doc.first_node("PatrolDevice");
+        //     if (!root) return false;
 
-                rapidxml::xml_node<>* time_node = root->first_node("Time");
-                if (time_node) {
-                    timestamp = time_node->value();
-                }
+        //     rapidxml::xml_node<>* time_node = root->first_node("Time");
+        //     if (time_node) {
+        //         timestamp = time_node->value();
+        //     }
 
-                // 清空现有点
-                points.clear();
+        //     // 清空现有点
+        //     points.clear();
 
-                // 解析所有Items节点
-                for (rapidxml::xml_node<>* items_node = root->first_node("Items");
-                     items_node;
-                     items_node = items_node->next_sibling("Items")) {
+        //     // 解析所有Items节点
+        //     for (rapidxml::xml_node<>* items_node = root->first_node("Items");
+        //             items_node;
+        //             items_node = items_node->next_sibling("Items")) {
 
-                    NavigationPoint point;
+        //         NavigationPoint point;
 
-                    // 解析各个字段
-                    auto get_node_value = [&](const char* name, auto& value) {
-                        rapidxml::xml_node<>* node = items_node->first_node(name);
-                        if (node) {
-                            std::stringstream ss(node->value());
-                            ss >> value;
-                        }
-                    };
+        //         // 解析各个字段
+        //         auto get_node_value = [&](const char* name, auto& value) {
+        //             rapidxml::xml_node<>* node = items_node->first_node(name);
+        //             if (node) {
+        //                 std::stringstream ss(node->value());
+        //                 ss >> value;
+        //             }
+        //         };
 
-                    get_node_value("MapId", point.mapId);
-                    get_node_value("Value", point.value);
-                    get_node_value("PosX", point.posX);
-                    get_node_value("PosY", point.posY);
-                    get_node_value("PosZ", point.posZ);
-                    get_node_value("AngleYaw", point.angleYaw);
-                    get_node_value("PointInfo", point.pointInfo);
-                    get_node_value("Gait", point.gait);
-                    get_node_value("Speed", point.speed);
-                    get_node_value("Manner", point.manner);
-                    get_node_value("ObsMode", point.obsMode);
-                    get_node_value("NavMode", point.navMode);
-                    get_node_value("Terrain", point.terrain);
-                    get_node_value("Posture", point.posture);
+        //         get_node_value("MapId", point.mapId);
+        //         get_node_value("Value", point.value);
+        //         get_node_value("PosX", point.posX);
+        //         get_node_value("PosY", point.posY);
+        //         get_node_value("PosZ", point.posZ);
+        //         get_node_value("AngleYaw", point.angleYaw);
+        //         get_node_value("PointInfo", point.pointInfo);
+        //         get_node_value("Gait", point.gait);
+        //         get_node_value("Speed", point.speed);
+        //         get_node_value("Manner", point.manner);
+        //         get_node_value("ObsMode", point.obsMode);
+        //         get_node_value("NavMode", point.navMode);
+        //         get_node_value("Terrain", point.terrain);
+        //         get_node_value("Posture", point.posture);
 
-                    points.push_back(point);
-                }
+        //         points.push_back(point);
+        //     }
 
-                return true;
-            } else {
-                // 兼容JSON格式
-                auto j = nlohmann::json::parse(data);
-
-                points.clear();
-
-                if (j.contains("points") && j["points"].is_array()) {
-                    for (const auto& point_json : j["points"]) {
-                        NavigationPoint point;
-                        point.mapId = point_json["mapId"];
-                        point.value = point_json["value"];
-                        point.posX = point_json["posX"];
-                        point.posY = point_json["posY"];
-                        point.posZ = point_json["posZ"];
-                        point.angleYaw = point_json["angleYaw"];
-                        point.pointInfo = point_json["pointInfo"];
-                        point.gait = point_json["gait"];
-                        point.speed = point_json["speed"];
-                        point.manner = point_json["manner"];
-                        point.obsMode = point_json["obsMode"];
-                        point.navMode = point_json["navMode"];
-                        point.terrain = point_json["terrain"];
-                        point.posture = point_json["posture"];
-                        points.push_back(point);
-                    }
-                }
-
-                if (j.contains("timestamp")) {
-                    timestamp = j["timestamp"];
-                }
-
-                return true;
-            }
-        } catch (const std::exception& e) {
-            return false;
-        }
+        //     return true;
+        // } catch (const std::exception& e) {
+        //     return false;
+        // }
     }
 };
 
@@ -467,54 +388,41 @@ public:
 
     bool deserialize(const std::string& data) override {
         try {
-            // 检查是否为XML格式
-            if (data.find("<?xml") != std::string::npos || data.find("<PatrolDevice>") != std::string::npos) {
-                rapidxml::xml_document<> doc;
-                std::vector<char> buffer(data.begin(), data.end());
-                buffer.push_back('\0');
-                doc.parse<rapidxml::parse_non_destructive>(&buffer[0]);
+            rapidxml::xml_document<> doc;
+            std::vector<char> buffer(data.begin(), data.end());
+            buffer.push_back('\0');
+            doc.parse<rapidxml::parse_non_destructive>(&buffer[0]);
 
-                rapidxml::xml_node<>* root = doc.first_node("PatrolDevice");
-                if (!root) return false;
+            rapidxml::xml_node<>* root = doc.first_node("PatrolDevice");
+            if (!root) return false;
 
-                rapidxml::xml_node<>* time_node = root->first_node("Time");
-                if (time_node) {
-                    timestamp = time_node->value();
-                }
-
-                rapidxml::xml_node<>* items_node = root->first_node("Items");
-                if (!items_node) return false;
-
-                // 解析各个字段
-                auto get_node_value = [&](const char* name, auto& value) {
-                    rapidxml::xml_node<>* node = items_node->first_node(name);
-                    if (node) {
-                        std::stringstream ss(node->value());
-                        ss >> value;
-                    }
-                };
-
-                get_node_value("Value", value);
-
-                // 解析错误码
-                int error_code_value = 0;
-                get_node_value("ErrorCode", error_code_value);
-                errorCode = static_cast<ErrorCode>(error_code_value);
-
-                get_node_value("ErrorStatus", errorStatus);
-
-                return true;
-            } else {
-                // 兼容JSON格式
-                auto j = nlohmann::json::parse(data);
-
-                value = j["value"];
-                errorCode = static_cast<ErrorCode>(static_cast<int>(j["errorCode"]));
-                errorStatus = j["errorStatus"];
-                timestamp = j["timestamp"];
-
-                return true;
+            rapidxml::xml_node<>* time_node = root->first_node("Time");
+            if (time_node) {
+                timestamp = time_node->value();
             }
+
+            rapidxml::xml_node<>* items_node = root->first_node("Items");
+            if (!items_node) return false;
+
+            // 解析各个字段
+            auto get_node_value = [&](const char* name, auto& value) {
+                rapidxml::xml_node<>* node = items_node->first_node(name);
+                if (node) {
+                    std::stringstream ss(node->value());
+                    ss >> value;
+                }
+            };
+
+            get_node_value("Value", value);
+
+            // 解析错误码
+            int error_code_value = 0;
+            get_node_value("ErrorCode", error_code_value);
+            errorCode = static_cast<ErrorCode>(error_code_value);
+
+            get_node_value("ErrorStatus", errorStatus);
+
+            return true;
         } catch (const std::exception& e) {
             return false;
         }
@@ -547,35 +455,26 @@ public:
         return ss.str();
     }
 
-    bool deserialize(const std::string& data) override {
-        try {
-            // 检查是否为XML格式
-            if (data.find("<?xml") != std::string::npos || data.find("<PatrolDevice>") != std::string::npos) {
-                rapidxml::xml_document<> doc;
-                std::vector<char> buffer(data.begin(), data.end());
-                buffer.push_back('\0');
-                doc.parse<rapidxml::parse_non_destructive>(&buffer[0]);
+    bool deserialize(const std::string&) override {
+        return false;
+        // try {
+        //     rapidxml::xml_document<> doc;
+        //     std::vector<char> buffer(data.begin(), data.end());
+        //     buffer.push_back('\0');
+        //     doc.parse<rapidxml::parse_non_destructive>(&buffer[0]);
 
-                rapidxml::xml_node<>* root = doc.first_node("PatrolDevice");
-                if (!root) return false;
+        //     rapidxml::xml_node<>* root = doc.first_node("PatrolDevice");
+        //     if (!root) return false;
 
-                rapidxml::xml_node<>* time_node = root->first_node("Time");
-                if (time_node) {
-                    timestamp = time_node->value();
-                }
+        //     rapidxml::xml_node<>* time_node = root->first_node("Time");
+        //     if (time_node) {
+        //         timestamp = time_node->value();
+        //     }
 
-                return true;
-            } else {
-                // 兼容JSON格式
-                auto j = nlohmann::json::parse(data);
-
-                timestamp = j["timestamp"];
-
-                return true;
-            }
-        } catch (const std::exception& e) {
-            return false;
-        }
+        //     return true;
+        // } catch (const std::exception& e) {
+        //     return false;
+        // }
     }
 };
 
@@ -614,59 +513,44 @@ public:
 
     bool deserialize(const std::string& data) override {
         try {
-            // 检查是否为XML格式
-            if (data.find("<?xml") != std::string::npos || data.find("<PatrolDevice>") != std::string::npos) {
-                rapidxml::xml_document<> doc;
-                std::vector<char> buffer(data.begin(), data.end());
-                buffer.push_back('\0');
-                doc.parse<rapidxml::parse_non_destructive>(&buffer[0]);
+            rapidxml::xml_document<> doc;
+            std::vector<char> buffer(data.begin(), data.end());
+            buffer.push_back('\0');
+            doc.parse<rapidxml::parse_non_destructive>(&buffer[0]);
 
-                rapidxml::xml_node<>* root = doc.first_node("PatrolDevice");
-                if (!root) return false;
+            rapidxml::xml_node<>* root = doc.first_node("PatrolDevice");
+            if (!root) return false;
 
-                rapidxml::xml_node<>* time_node = root->first_node("Time");
-                if (time_node) {
-                    timestamp = time_node->value();
-                }
-
-                rapidxml::xml_node<>* items_node = root->first_node("Items");
-                if (!items_node) return false;
-
-                // 解析各个字段
-                auto get_node_value = [&](const char* name, auto& value) {
-                    rapidxml::xml_node<>* node = items_node->first_node(name);
-                    if (node) {
-                        std::stringstream ss(node->value());
-                        ss >> value;
-                    }
-                };
-
-                get_node_value("Value", value);
-
-                // 解析状态
-                int status_value = 0;
-                get_node_value("Status", status_value);
-                status = static_cast<NavigationStatus>(status_value);
-
-                // 解析错误码
-                int error_code_value = 0;
-                get_node_value("ErrorCode", error_code_value);
-                errorCode = static_cast<ErrorCode>(error_code_value);
-
-                return true;
-            } else {
-                // 兼容JSON格式
-                auto j = nlohmann::json::parse(data);
-
-                value = j["value"];
-                status = static_cast<NavigationStatus>(static_cast<int>(j["status"]));
-                if (j.contains("errorCode")) {
-                    errorCode = static_cast<ErrorCode>(static_cast<int>(j["errorCode"]));
-                }
-                timestamp = j["timestamp"];
-
-                return true;
+            rapidxml::xml_node<>* time_node = root->first_node("Time");
+            if (time_node) {
+                timestamp = time_node->value();
             }
+
+            rapidxml::xml_node<>* items_node = root->first_node("Items");
+            if (!items_node) return false;
+
+            // 解析各个字段
+            auto get_node_value = [&](const char* name, auto& value) {
+                rapidxml::xml_node<>* node = items_node->first_node(name);
+                if (node) {
+                    std::stringstream ss(node->value());
+                    ss >> value;
+                }
+            };
+
+            get_node_value("Value", value);
+
+            // 解析状态
+            int status_value = 0;
+            get_node_value("Status", status_value);
+            status = static_cast<NavigationStatus>(status_value);
+
+            // 解析错误码
+            int error_code_value = 0;
+            get_node_value("ErrorCode", error_code_value);
+            errorCode = static_cast<ErrorCode>(error_code_value);
+
+            return true;
         } catch (const std::exception& e) {
             return false;
         }
@@ -699,35 +583,26 @@ public:
         return ss.str();
     }
 
-    bool deserialize(const std::string& data) override {
-        try {
-            // 检查是否为XML格式
-            if (data.find("<?xml") != std::string::npos || data.find("<PatrolDevice>") != std::string::npos) {
-                rapidxml::xml_document<> doc;
-                std::vector<char> buffer(data.begin(), data.end());
-                buffer.push_back('\0');
-                doc.parse<rapidxml::parse_non_destructive>(&buffer[0]);
+    bool deserialize(const std::string&) override {
+        return false;
+        // try {
+            // rapidxml::xml_document<> doc;
+            // std::vector<char> buffer(data.begin(), data.end());
+            // buffer.push_back('\0');
+            // doc.parse<rapidxml::parse_non_destructive>(&buffer[0]);
 
-                rapidxml::xml_node<>* root = doc.first_node("PatrolDevice");
-                if (!root) return false;
+            // rapidxml::xml_node<>* root = doc.first_node("PatrolDevice");
+            // if (!root) return false;
 
-                rapidxml::xml_node<>* time_node = root->first_node("Time");
-                if (time_node) {
-                    timestamp = time_node->value();
-                }
+            // rapidxml::xml_node<>* time_node = root->first_node("Time");
+            // if (time_node) {
+            //     timestamp = time_node->value();
+            // }
 
-                return true;
-            } else {
-                // 兼容JSON格式
-                auto j = nlohmann::json::parse(data);
-
-                timestamp = j["timestamp"];
-
-                return true;
-            }
-        } catch (const std::exception& e) {
-            return false;
-        }
+            // return true;
+        // } catch (const std::exception& e) {
+        //     return false;
+        // }
     }
 };
 
@@ -762,43 +637,32 @@ public:
 
     bool deserialize(const std::string& data) override {
         try {
-            // 检查是否为XML格式
-            if (data.find("<?xml") != std::string::npos || data.find("<PatrolDevice>") != std::string::npos) {
-                rapidxml::xml_document<> doc;
-                std::vector<char> buffer(data.begin(), data.end());
-                buffer.push_back('\0');
-                doc.parse<rapidxml::parse_non_destructive>(&buffer[0]);
+            rapidxml::xml_document<> doc;
+            std::vector<char> buffer(data.begin(), data.end());
+            buffer.push_back('\0');
+            doc.parse<rapidxml::parse_non_destructive>(&buffer[0]);
 
-                rapidxml::xml_node<>* root = doc.first_node("PatrolDevice");
-                if (!root) return false;
+            rapidxml::xml_node<>* root = doc.first_node("PatrolDevice");
+            if (!root) return false;
 
-                rapidxml::xml_node<>* time_node = root->first_node("Time");
-                if (time_node) {
-                    timestamp = time_node->value();
-                }
-
-                rapidxml::xml_node<>* items_node = root->first_node("Items");
-                if (!items_node) return false;
-
-                // 解析错误码
-                int error_code_value = 0;
-                rapidxml::xml_node<>* error_code_node = items_node->first_node("ErrorCode");
-                if (error_code_node) {
-                    std::stringstream ss(error_code_node->value());
-                    ss >> error_code_value;
-                    errorCode = static_cast<ErrorCode>(error_code_value);
-                }
-
-                return true;
-            } else {
-                // 兼容JSON格式
-                auto j = nlohmann::json::parse(data);
-
-                errorCode = static_cast<ErrorCode>(static_cast<int>(j["errorCode"]));
-                timestamp = j["timestamp"];
-
-                return true;
+            rapidxml::xml_node<>* time_node = root->first_node("Time");
+            if (time_node) {
+                timestamp = time_node->value();
             }
+
+            rapidxml::xml_node<>* items_node = root->first_node("Items");
+            if (!items_node) return false;
+
+            // 解析错误码
+            int error_code_value = 0;
+            rapidxml::xml_node<>* error_code_node = items_node->first_node("ErrorCode");
+            if (error_code_node) {
+                std::stringstream ss(error_code_node->value());
+                ss >> error_code_value;
+                errorCode = static_cast<ErrorCode>(error_code_value);
+            }
+
+            return true;
         } catch (const std::exception& e) {
             return false;
         }

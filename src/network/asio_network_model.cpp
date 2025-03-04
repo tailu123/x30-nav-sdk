@@ -203,7 +203,7 @@ void AsioNetworkModel::handleReceive(const boost::system::error_code& error, std
     startReceive();
 }
 
-void AsioNetworkModel::handleSend(const boost::system::error_code& error, std::size_t bytes_transferred) {
+void AsioNetworkModel::handleSend(const boost::system::error_code& error, std::size_t) {
     if (error) {
         std::cerr << "发送数据错误: " << error.message() << std::endl;
         if (error != boost::asio::error::operation_aborted) {

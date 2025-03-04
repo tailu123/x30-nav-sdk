@@ -206,7 +206,7 @@ private:
             }
         }
 
-        std::string handleNavigationTaskRequest(const nlohmann::json& request) {
+        std::string handleNavigationTaskRequest(const nlohmann::json&) {
             std::cout << "收到导航任务请求" << std::endl;
 
             // 生成响应
@@ -219,7 +219,7 @@ private:
             return response.dump();
         }
 
-        std::string handleGetRealTimeStatusRequest(const nlohmann::json& request) {
+        std::string handleGetRealTimeStatusRequest(const nlohmann::json&) {
             std::cout << "收到获取实时状态请求" << std::endl;
 
             // 生成随机状态
@@ -263,7 +263,7 @@ private:
             return response.dump();
         }
 
-        std::string handleQueryStatusRequest(const nlohmann::json& request) {
+        std::string handleQueryStatusRequest(const nlohmann::json&) {
             std::cout << "收到查询任务状态请求" << std::endl;
 
             // 生成随机状态
@@ -283,7 +283,7 @@ private:
             return response.dump();
         }
 
-        std::string handleCancelTaskRequest(const nlohmann::json& request) {
+        std::string handleCancelTaskRequest(const nlohmann::json&) {
             std::cout << "收到取消任务请求" << std::endl;
 
             // 生成响应
@@ -299,7 +299,7 @@ private:
             boost::asio::async_write(
                 *socket_,
                 boost::asio::buffer(response_data),
-                [this, self](const boost::system::error_code& error, std::size_t bytes_transferred) {
+                [this, self](const boost::system::error_code& error, std::size_t) {
                     if (error) {
                         std::cerr << "发送响应错误: " << error.message() << std::endl;
                     }
