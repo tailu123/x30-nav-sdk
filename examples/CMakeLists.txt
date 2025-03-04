@@ -1,26 +1,20 @@
-# 示例程序的CMakeLists.txt
+# 示例程序的主 CMakeLists.txt
 cmake_minimum_required(VERSION 3.10)
 project(x30_nav_sdk_examples)
 
 # 查找线程库
 find_package(Threads REQUIRED)
 
-# 新的基本示例
-add_executable(basic_example_new basic_example_new.cpp)
-target_link_libraries(basic_example_new PRIVATE x30_nav_sdk Threads::Threads)
+# 添加子目录
+add_subdirectory(basic)
+add_subdirectory(server)
+add_subdirectory(advanced)
 
-# 模拟服务器
-add_executable(mock_server mock_server.cpp)
-target_link_libraries(mock_server PRIVATE ${Boost_LIBRARIES} nlohmann_json::nlohmann_json Threads::Threads)
-
-# 安装示例
-install(TARGETS basic_example_new mock_server
-    RUNTIME DESTINATION bin/examples
-)
-
-# 复制示例源代码到安装目录
-install(FILES
-    basic_example_new.cpp
-    mock_server.cpp
+# 安装示例目录结构
+install(DIRECTORY
+    ${CMAKE_CURRENT_SOURCE_DIR}/basic
+    ${CMAKE_CURRENT_SOURCE_DIR}/server
+    ${CMAKE_CURRENT_SOURCE_DIR}/advanced
     DESTINATION share/x30_nav_sdk/examples
+    FILES_MATCHING PATTERN "*.cpp" PATTERN "*.json"
 )

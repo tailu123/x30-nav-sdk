@@ -29,12 +29,9 @@ std::vector<nav_sdk::NavigationPoint> loadDefaultNavigationPoints(const std::str
             points.push_back(nav_sdk::NavigationPoint::fromJson(jsonPoint));
         }
 
-        // spdlog::info("[{}]: [Utils:INFO]: 成功从配置文件加载了 {} 个导航点", common::getCurrentTimestamp(),
-        //              points.size());
         std::cout << "成功从配置文件加载了 " << points.size() << " 个导航点" << std::endl;
     }
     catch (const std::exception& e) {
-        // spdlog::error("[Utils:ERR]: 加载配置文件失败: {}", e.what());
         std::cerr << "加载配置文件失败: " << e.what() << std::endl;
     }
     return points;
@@ -42,12 +39,44 @@ std::vector<nav_sdk::NavigationPoint> loadDefaultNavigationPoints(const std::str
 
 // 辅助函数：加载默认导航点
 std::vector<nav_sdk::NavigationPoint> loadNavigationPoints() {
-    std::filesystem::path exePath = std::filesystem::canonical("/proc/self/exe");
-    std::filesystem::path projectRoot = exePath.parent_path().parent_path();
-    std::filesystem::path configPath = projectRoot / "default_params.json";
+    // 尝试多个可能的路径
+    std::vector<std::filesystem::path> possiblePaths;
 
-    static std::vector<nav_sdk::NavigationPoint> points = loadDefaultNavigationPoints(configPath.string());
-    return points;
+    try {
+        // 1. 尝试相对于可执行文件的路径
+        std::filesystem::path exePath = std::filesystem::canonical("/proc/self/exe");
+        std::filesystem::path exeDir = exePath.parent_path();
+
+        possiblePaths.push_back(exeDir / "default_params.json");                  // 与可执行文件同目录
+        possiblePaths.push_back(exeDir / "basic" / "default_params.json");        // 可执行文件的 basic 子目录
+        possiblePaths.push_back(exeDir.parent_path() / "examples" / "basic" / "default_params.json"); // bin/../examples/basic/
+
+        // 2. 尝试相对于当前工作目录的路径
+        std::filesystem::path currentDir = std::filesystem::current_path();
+        possiblePaths.push_back(currentDir / "default_params.json");
+        possiblePaths.push_back(currentDir / "examples" / "basic" / "default_params.json");
+
+        // 3. 尝试源代码目录的路径（假设在构建目录中运行）
+        possiblePaths.push_back(currentDir.parent_path() / "examples" / "basic" / "default_params.json");
+    }
+    catch (const std::exception& e) {
+        std::cerr << "获取可执行文件路径时出错: " << e.what() << std::endl;
+    }
+
+    // 尝试每个可能的路径
+    for (const auto& path : possiblePaths) {
+        std::cout << "尝试加载配置文件: " << path.string() << std::endl;
+        if (std::filesystem::exists(path)) {
+            std::vector<nav_sdk::NavigationPoint> points = loadDefaultNavigationPoints(path.string());
+            if (!points.empty()) {
+                return points;
+            }
+        }
+    }
+
+    // 如果所有路径都失败，尝试使用硬编码的路径
+    std::cerr << "无法找到配置文件，尝试使用硬编码路径" << std::endl;
+    return loadDefaultNavigationPoints("./default_params.json");
 }
 
 std::vector<nav_sdk::NavigationPoint> g_points = loadNavigationPoints();
