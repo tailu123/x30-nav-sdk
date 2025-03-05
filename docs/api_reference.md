@@ -49,13 +49,6 @@ void disconnect();
  * @return 如果已连接，则返回 true；否则返回 false
  */
 bool isConnected() const;
-
-/**
- * @brief 启用或禁用自动重连功能
- * @param enable 如果为 true，则启用自动重连；否则禁用
- * @param interval_seconds 重连间隔（秒）
- */
-void enableAutoReconnect(bool enable, uint32_t interval_seconds = 5);
 ```
 
 ### 事件回调
@@ -74,87 +67,35 @@ void setEventCallback(EventCallback callback);
 ```cpp
 /**
  * @brief 获取机器狗实时状态（同步方法）
- * @param timeout 超时时间（毫秒）
- * @return 包含实时状态和错误码的对
+ * @return 包含实时状态如位置、速度、角度、电量等
  */
-std::pair<RealTimeStatus, ErrorCode> getRealTimeStatus(
-    const std::chrono::milliseconds& timeout = std::chrono::seconds(5));
-
-/**
- * @brief 获取机器狗实时状态（异步方法）
- * @param callback 结果回调函数
- * @param timeout 超时时间（毫秒）
- */
-void getRealTimeStatusAsync(
-    RealTimeStatusCallback callback,
-    const std::chrono::milliseconds& timeout = std::chrono::seconds(5));
+RealTimeStatus getRealTimeStatus();
 ```
 
 ### 导航任务
 
 ```cpp
 /**
- * @brief 开始导航任务（同步方法）
- * @param navigation_points 导航点列表
- * @param timeout 超时时间（毫秒）
- * @return 包含导航结果和错误码的对
- */
-std::pair<NavigationResult, ErrorCode> startNavigation(
-    const std::vector<NavigationPoint>& navigation_points,
-    const std::chrono::milliseconds& timeout = std::chrono::seconds(5));
-
-/**
  * @brief 开始导航任务（异步方法）
  * @param navigation_points 导航点列表
  * @param callback 结果回调函数
- * @param timeout 超时时间（毫秒）
+ * @note 导航任务完成后，会通过回调函数返回结果; 回调函数在IO线程中调用，不应执行长时间操作
  */
 void startNavigationAsync(
     const std::vector<NavigationPoint>& navigation_points,
-    NavigationResultCallback callback,
-    const std::chrono::milliseconds& timeout = std::chrono::seconds(5));
+    NavigationResultCallback callback);
 
 /**
  * @brief 取消导航任务（同步方法）
- * @param task_id 任务 ID
- * @param timeout 超时时间（毫秒）
- * @return 包含取消结果和错误码的对
+ * @return 如果取消成功，则返回 true；否则返回 false
  */
-std::pair<CancelResult, ErrorCode> cancelNavigation(
-    uint32_t task_id,
-    const std::chrono::milliseconds& timeout = std::chrono::seconds(5));
-
-/**
- * @brief 取消导航任务（异步方法）
- * @param task_id 任务 ID
- * @param callback 结果回调函数
- * @param timeout 超时时间（毫秒）
- */
-void cancelNavigationAsync(
-    uint32_t task_id,
-    CancelResultCallback callback,
-    const std::chrono::milliseconds& timeout = std::chrono::seconds(5));
+bool cancelNavigation();
 
 /**
  * @brief 查询任务状态（同步方法）
- * @param task_id 任务 ID
- * @param timeout 超时时间（毫秒）
- * @return 包含任务状态和错误码的对
+ * @return 包含任务状态和错误码
  */
-std::pair<TaskStatus, ErrorCode> queryTaskStatus(
-    uint32_t task_id,
-    const std::chrono::milliseconds& timeout = std::chrono::seconds(5));
-
-/**
- * @brief 查询任务状态（异步方法）
- * @param task_id 任务 ID
- * @param callback 结果回调函数
- * @param timeout 超时时间（毫秒）
- */
-void queryTaskStatusAsync(
-    uint32_t task_id,
-    TaskStatusCallback callback,
-    const std::chrono::milliseconds& timeout = std::chrono::seconds(5));
+TaskStatusResult queryTaskStatus();
 ```
 
 ### 版本信息
@@ -176,27 +117,20 @@ static std::string getVersion();
  * @brief 导航点
  */
 struct NavigationPoint {
-    double latitude;   ///< 纬度
-    double longitude;  ///< 经度
-    double altitude;   ///< 海拔（米）
-    double speed;      ///< 速度（米/秒）
-    double heading;    ///< 航向（度，0-360，正北为 0）
-
-    /**
-     * @brief 默认构造函数
-     */
-    NavigationPoint() : latitude(0), longitude(0), altitude(0), speed(0), heading(0) {}
-
-    /**
-     * @brief 构造函数
-     * @param lat 纬度
-     * @param lon 经度
-     * @param alt 海拔（米）
-     * @param spd 速度（米/秒）
-     * @param hdg 航向（度，0-360，正北为 0）
-     */
-    NavigationPoint(double lat, double lon, double alt = 0, double spd = 0, double hdg = 0)
-        : latitude(lat), longitude(lon), altitude(alt), speed(spd), heading(hdg) {}
+    int mapId = 0;       ///< 地图ID
+    int value = 0;       ///< 点值
+    double posX = 0.0;   ///< X坐标
+    double posY = 0.0;   ///< Y坐标
+    double posZ = 0.0;   ///< Z坐标
+    double angleYaw = 0.0;///< Yaw角度
+    int pointInfo = 0;   ///< 点信息
+    int gait = 0;        ///< 步态
+    int speed = 0;       ///< 速度
+    int manner = 0;      ///< 方式
+    int obsMode = 0;     ///< 障碍物模式
+    int navMode = 0;     ///< 导航模式
+    int terrain = 0;     ///< 地形
+    int posture = 0;     ///< 姿态
 };
 ```
 
@@ -207,21 +141,32 @@ struct NavigationPoint {
  * @brief 机器狗实时状态
  */
 struct RealTimeStatus {
-    double latitude;                 ///< 当前纬度
-    double longitude;                ///< 当前经度
-    double altitude;                 ///< 当前海拔（米）
-    double speed;                    ///< 当前速度（米/秒）
-    double heading;                  ///< 当前航向（度，0-360，正北为 0）
-    double battery_level;            ///< 电池电量（百分比，0-100）
-    DogStatus status;                ///< 机器狗状态
-    std::vector<uint32_t> task_ids;  ///< 当前活动的任务 ID 列表
-
-    /**
-     * @brief 默认构造函数
-     */
-    RealTimeStatus()
-        : latitude(0), longitude(0), altitude(0), speed(0), heading(0),
-          battery_level(0), status(DogStatus::UNKNOWN) {}
+    int motionState = 0;                ///< 运动状态
+    double posX = 0.0;                  ///< 位置X
+    double posY = 0.0;                  ///< 位置Y
+    double posZ = 0.0;                  ///< 位置Z
+    double angleYaw = 0.0;              ///< 角度Yaw
+    double roll = 0.0;                  ///< 角度Roll
+    double pitch = 0.0;                 ///< 角度Pitch
+    double yaw = 0.0;                   ///< 角度Yaw
+    double speed = 0.0;                 ///< 速度
+    double curOdom = 0.0;               ///< 当前里程
+    double sumOdom = 0.0;               ///< 累计里程
+    uint64_t curRuntime = 0;            ///< 当前运行时间
+    uint64_t sumRuntime = 0;            ///< 累计运行时间
+    double res = 0.0;                   ///< 响应时间
+    double x0 = 0.0;                    ///< 坐标X0
+    double y0 = 0.0;                    ///< 坐标Y0
+    int h = 0;                          ///< 高度
+    int electricity = 0;                ///< 电量
+    int location = 0;                   ///< 位置  定位正常=0, 定位丢失=1
+    int RTKState = 0;                   ///< RTK状态
+    int onDockState = 0;                ///< 上岸状态
+    int gaitState = 0;                  ///< 步态状态
+    int motorState = 0;                 ///< 电机状态
+    int chargeState = 0;                ///< 充电状态
+    int controlMode = 0;                ///< 控制模式
+    int mapUpdateState = 0;             ///< 地图更新状态
 };
 ```
 
@@ -232,23 +177,9 @@ struct RealTimeStatus {
  * @brief 导航任务结果
  */
 struct NavigationResult {
-    uint32_t task_id;       ///< 任务 ID
-    bool success;           ///< 是否成功
-    std::string message;    ///< 结果消息
-
-    /**
-     * @brief 默认构造函数
-     */
-    NavigationResult() : task_id(0), success(false) {}
-
-    /**
-     * @brief 构造函数
-     * @param id 任务 ID
-     * @param succ 是否成功
-     * @param msg 结果消息
-     */
-    NavigationResult(uint32_t id, bool succ, const std::string& msg = "")
-        : task_id(id), success(succ), message(msg) {}
+    int value = 0;                      ///< 导航任务目标点编号，与下发导航任务请求对应
+    ErrorCode errorCode = ErrorCode::SUCCESS; ///< 错误码
+    int errorStatus = 0;                ///< 错误状态码
 };
 ```
 
@@ -688,7 +619,5 @@ SDK 的所有公共 API 都是线程安全的，可以从多个线程同时调�
 
 | 版本 | 发布日期 | 主要变更 |
 |------|----------|---------|
-| 0.1.0 | 2023-01-01 | 初始版本 |
-| 0.2.0 | 2023-03-15 | 添加自动重连功能 |
-| 0.3.0 | 2023-06-30 | 添加异步方法 |
-| 1.0.0 | 2023-12-01 | 稳定版本发布 |
+| 0.1.0 | 2025-03-05 | 初始版本 |
+| 1.0.0 | 2025-03-05 | 稳定版本发布 |

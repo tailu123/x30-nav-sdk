@@ -9,16 +9,41 @@
 namespace nav_sdk {
 
 /**
- * @brief 错误码枚举
+ * @brief 导航任务错误码枚举
  */
-enum class ErrorCode {
+enum class ErrorCode_Navigation {
     SUCCESS = 0,      ///< 操作成功
     FAILURE = 1,      ///< 操作失败
     CANCELLED = 2,    ///< 操作被取消
-    TIMEOUT = 3,      ///< 操作超时
-    INVALID_PARAM = 4,///< 无效参数
-    NOT_CONNECTED = 5,///< 未连接
-    NETWORK_ERROR = 6 ///< 网络错误
+
+    INVALID_PARAM = 3,///< 无效参数
+    NOT_CONNECTED = 4 ///< 未连接
+};
+
+/**
+ * @brief 任务状态查询错误码枚举
+ */
+enum class ErrorCode_QueryStatus {
+    COMPLETED = 0,          ///< 任务已完成
+    EXECUTING = 1,          ///< 任务执行中
+    FAILED = -1,            ///< 无法执行
+
+    INVALID_RESPONSE = 2,   ///< 无效响应
+    TIMEOUT = 3,            ///< 超时
+    NOT_CONNECTED = 4,      ///< 未连接
+    UNKNOWN_ERROR = 5       ///< 未知错误
+};
+
+/**
+ * @brief 实时状态查询错误码枚举
+ */
+enum class ErrorCode_RealTimeStatus {
+    SUCCESS = 0,      ///< 操作成功
+
+    INVALID_RESPONSE = 1,///< 无效响应
+    TIMEOUT = 2,       ///< 超时
+    NOT_CONNECTED = 3, ///< 未连接
+    UNKNOWN_ERROR = 4 ///< 未知错误
 };
 
 /**
@@ -114,7 +139,8 @@ struct RealTimeStatus {
     int chargeState = 0;                ///< 充电状态
     int controlMode = 0;                ///< 控制模式
     int mapUpdateState = 0;             ///< 地图更新状态
-    std::string timestamp;              ///< 时间戳
+
+    ErrorCode_RealTimeStatus errorCode = ErrorCode_RealTimeStatus::SUCCESS; ///< 错误码
 };
 #pragma pack(pop)
 /**
@@ -122,9 +148,8 @@ struct RealTimeStatus {
  */
 struct NavigationResult {
     int value = 0;                      ///< 导航任务目标点编号，与下发导航任务请求对应
-    ErrorCode errorCode = ErrorCode::SUCCESS; ///< 错误码
+    ErrorCode_Navigation errorCode = ErrorCode_Navigation::SUCCESS; ///< 错误码
     int errorStatus = 0;                ///< 错误状态码
-    std::string timestamp;              ///< 时间戳
 };
 
 /**
@@ -133,8 +158,7 @@ struct NavigationResult {
 struct TaskStatusResult {
     int value = 0;                      ///< 导航任务目标点编号，与下发导航任务请求对应
     NavigationStatus status = NavigationStatus::COMPLETED; ///< 导航状态
-    ErrorCode errorCode = ErrorCode::SUCCESS; ///< 错误码
-    std::string timestamp;              ///< 时间戳
+    ErrorCode_QueryStatus errorCode = ErrorCode_QueryStatus::COMPLETED; ///< 错误码
 };
 
 /**
@@ -158,11 +182,6 @@ struct Event {
 struct SdkOptions {
     std::chrono::milliseconds connectionTimeout{5000}; ///< 连接超时时间
     std::chrono::milliseconds requestTimeout{3000};    ///< 请求超时时间
-    // bool autoReconnect = true;                         ///< 是否自动重连
-    // int maxReconnectAttempts = 3;                      ///< 最大重连尝试次数
-    // std::chrono::milliseconds reconnectInterval{1000}; ///< 重连间隔
-    // bool enableLogging = false;                        ///< 是否启用日志
-    // std::string logLevel = "info";                     ///< 日志级别
 };
 
 /**

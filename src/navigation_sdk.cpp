@@ -126,7 +126,6 @@ RealTimeStatus convertToRealTimeStatus(const protocol::GetRealTimeStatusResponse
     status.chargeState = realTimeResp.chargeState;
     status.controlMode = realTimeResp.controlMode;
     status.mapUpdateState = realTimeResp.mapUpdateState;
-    status.timestamp = realTimeResp.timestamp;
 
     return status;
 }
@@ -196,7 +195,9 @@ public:
     RealTimeStatus getRealTimeStatus() {
         try {
             if (!isConnected()) {
-                throw std::runtime_error("未连接到服务器");
+                RealTimeStatus status;
+                status.errorCode = ErrorCode_RealTimeStatus::NOT_CONNECTED;
+                return status;
             }
 
             // 创建请求消息
@@ -215,6 +216,7 @@ public:
 
             // 等待响应
             std::unique_ptr<protocol::GetRealTimeStatusResponse> realTimeResp;
+            bool responseReceived = false;
             {
                 std::unique_lock<std::mutex> lock(pending_requests_mutex_);
                 auto& pendingReq = pendingRequests_[seqNum];
@@ -225,14 +227,13 @@ public:
                 }
 
                 if (pendingReq.responseReceived && pendingReq.response) {
+                    responseReceived = true;
                     // 正确处理指针转换和所有权转移
                     auto* castedPtr = dynamic_cast<protocol::GetRealTimeStatusResponse*>(pendingReq.response.get());
                     if (castedPtr) {
                         // 创建新的 unique_ptr 并释放原始 response 的所有权
                         realTimeResp = std::unique_ptr<protocol::GetRealTimeStatusResponse>(castedPtr);
                         pendingReq.response.release();  // 释放所有权但不删除对象
-                    } else {
-                        throw std::runtime_error("dynamic_cast 转换失败");
                     }
                 }
 
@@ -240,41 +241,48 @@ public:
                 pendingRequests_.erase(seqNum);
             }
 
+            if (!responseReceived) {
+                RealTimeStatus status;
+                status.errorCode = ErrorCode_RealTimeStatus::TIMEOUT;
+                return status;
+            }
+
             if (!realTimeResp) {
-                throw std::runtime_error("收到无效的实时状态响应");
+                RealTimeStatus status;
+                status.errorCode = ErrorCode_RealTimeStatus::INVALID_RESPONSE;
+                return status;
             }
 
             // 转换为SDK的RealTimeStatus
             RealTimeStatus status = convertToRealTimeStatus(*realTimeResp);
 
             return status;
+
         } catch (const std::exception& e) {
             std::cerr << "getRealTimeStatus 异常: " << e.what() << std::endl;
-            throw;
+            RealTimeStatus status;
+            status.errorCode = ErrorCode_RealTimeStatus::UNKNOWN_ERROR;
+            return status;
         } catch (...) {
             std::cerr << "getRealTimeStatus 未知异常" << std::endl;
-            throw;
+            RealTimeStatus status;
+            status.errorCode = ErrorCode_RealTimeStatus::UNKNOWN_ERROR;
+            return status;
         }
     }
 
     // 添加基于回调的异步方法实现
     void startNavigationAsync(const std::vector<NavigationPoint>& points, NavigationResultCallback callback) {
-        if (!callback) {
+        if (!callback || points.empty()) {
+            NavigationResult failResult;
+            failResult.errorCode = ErrorCode_Navigation::INVALID_PARAM;
+            safeCallback(callback, "导航结果", failResult);
             return;
         }
 
         if (!isConnected()) {
             NavigationResult failResult;
-            failResult.errorCode = ErrorCode::NOT_CONNECTED;
-            failResult.timestamp = getCurrentTimestamp();
-            safeCallback(callback, "导航结果", failResult);
-            return;
-        }
-
-        if (points.empty()) {
-            NavigationResult failResult;
-            failResult.errorCode = ErrorCode::INVALID_PARAM;
-            failResult.timestamp = getCurrentTimestamp();
+            failResult.errorCode = ErrorCode_Navigation::NOT_CONNECTED;
             safeCallback(callback, "导航结果", failResult);
             return;
         }
@@ -318,112 +326,137 @@ public:
     }
 
     bool cancelNavigation() {
-        if (!isConnected()) {
-            throw std::runtime_error("未连接到服务器");
-        }
-
-        // 创建请求消息
-        protocol::CancelTaskRequest request;
-        request.timestamp = getCurrentTimestamp();
-
-        // 生成并设置序列号
-        uint16_t seqNum = generateSequenceNumber();
-        request.setSequenceNumber(seqNum);
-
-        // 添加到待处理请求，标记为同步请求
-        addPendingRequest(seqNum, protocol::MessageType::CANCEL_TASK_RESP);
-
-        // 发送请求
-        network_model_->sendMessage(request);
-
-        // 等待响应
-        std::unique_ptr<protocol::CancelTaskResponse> cancelResp;
-        {
-            std::unique_lock<std::mutex> lock(pending_requests_mutex_);
-            auto& pendingReq = pendingRequests_[seqNum];
-
-            if (!pendingReq.responseReceived) {
-                pendingReq.cv->wait_for(lock, options_.requestTimeout,
-                    [&pendingReq]() { return pendingReq.responseReceived; });
+        try {
+            if (!isConnected()) {
+                return false;
             }
 
-            if (pendingReq.responseReceived && pendingReq.response) {
-                // 正确处理指针转换和所有权转移
-                auto* castedPtr = dynamic_cast<protocol::CancelTaskResponse*>(pendingReq.response.get());
-                if (castedPtr) {
-                    cancelResp = std::unique_ptr<protocol::CancelTaskResponse>(castedPtr);
-                    pendingReq.response.release();  // 释放所有权但不删除对象
-                } else {
-                    throw std::runtime_error("dynamic_cast 转换失败");
+            // 创建请求消息
+            protocol::CancelTaskRequest request;
+            request.timestamp = getCurrentTimestamp();
+
+            // 生成并设置序列号
+            uint16_t seqNum = generateSequenceNumber();
+            request.setSequenceNumber(seqNum);
+
+            // 添加到待处理请求，标记为同步请求
+            addPendingRequest(seqNum, protocol::MessageType::CANCEL_TASK_RESP);
+
+            // 发送请求
+            network_model_->sendMessage(request);
+
+            // 等待响应
+            std::unique_ptr<protocol::CancelTaskResponse> cancelResp;
+            {
+                std::unique_lock<std::mutex> lock(pending_requests_mutex_);
+                auto& pendingReq = pendingRequests_[seqNum];
+
+                if (!pendingReq.responseReceived) {
+                    pendingReq.cv->wait_for(lock, options_.requestTimeout,
+                        [&pendingReq]() { return pendingReq.responseReceived; });
                 }
+
+                if (pendingReq.responseReceived && pendingReq.response) {
+                    // 正确处理指针转换和所有权转移
+                    auto* castedPtr = dynamic_cast<protocol::CancelTaskResponse*>(pendingReq.response.get());
+                    if (castedPtr) {
+                        cancelResp = std::unique_ptr<protocol::CancelTaskResponse>(castedPtr);
+                        pendingReq.response.release();  // 释放所有权但不删除对象
+                    }
+                }
+
+                pendingRequests_.erase(seqNum);
             }
 
-            pendingRequests_.erase(seqNum);
-        }
+            return cancelResp && cancelResp->errorCode == protocol::ErrorCode_CancelTask::SUCCESS;
 
-        if (!cancelResp) {
-            throw std::runtime_error("收到无效的取消任务响应");
+        } catch (const std::exception& e) {
+            std::cerr << "cancelNavigation 异常: " << e.what() << std::endl;
+            return false;
+        } catch (...) {
+            std::cerr << "cancelNavigation 未知异常" << std::endl;
+            return false;
         }
-
-        return cancelResp->errorCode == protocol::ErrorCode::SUCCESS;
     }
 
     TaskStatusResult queryTaskStatus() {
-        if (!isConnected()) {
-            throw std::runtime_error("未连接到服务器");
-        }
-
-        // 创建请求消息
-        protocol::QueryStatusRequest request;
-        request.timestamp = getCurrentTimestamp();
-
-        // 生成并设置序列号
-        uint16_t seqNum = generateSequenceNumber();
-        request.setSequenceNumber(seqNum);
-
-        // 添加到待处理请求，标记为同步请求
-        addPendingRequest(seqNum, protocol::MessageType::QUERY_STATUS_RESP);
-
-        // 发送请求
-        network_model_->sendMessage(request);
-
-        // 等待响应
-        std::unique_ptr<protocol::QueryStatusResponse> statusResp;
-        {
-            std::unique_lock<std::mutex> lock(pending_requests_mutex_);
-            auto& pendingReq = pendingRequests_[seqNum];
-
-            if (!pendingReq.responseReceived) {
-                pendingReq.cv->wait_for(lock, options_.requestTimeout,
-                    [&pendingReq]() { return pendingReq.responseReceived; });
+        try {
+            if (!isConnected()) {
+                TaskStatusResult result;
+                result.errorCode = ErrorCode_QueryStatus::NOT_CONNECTED;
+                return result;
             }
 
-            if (pendingReq.responseReceived && pendingReq.response) {
-                // 正确处理指针转换和所有权转移
-                auto* castedPtr = dynamic_cast<protocol::QueryStatusResponse*>(pendingReq.response.get());
-                if (castedPtr) {
-                    statusResp = std::unique_ptr<protocol::QueryStatusResponse>(castedPtr);
-                    pendingReq.response.release();  // 释放所有权但不删除对象
-                } else {
-                    throw std::runtime_error("dynamic_cast 转换失败");
+            // 创建请求消息
+            protocol::QueryStatusRequest request;
+            request.timestamp = getCurrentTimestamp();
+
+            // 生成并设置序列号
+            uint16_t seqNum = generateSequenceNumber();
+            request.setSequenceNumber(seqNum);
+
+            // 添加到待处理请求，标记为同步请求
+            addPendingRequest(seqNum, protocol::MessageType::QUERY_STATUS_RESP);
+
+            // 发送请求
+            network_model_->sendMessage(request);
+
+            // 等待响应
+            std::unique_ptr<protocol::QueryStatusResponse> statusResp;
+            bool responseReceived = false;
+            {
+                std::unique_lock<std::mutex> lock(pending_requests_mutex_);
+                auto& pendingReq = pendingRequests_[seqNum];
+
+                if (!pendingReq.responseReceived) {
+                    pendingReq.cv->wait_for(lock, options_.requestTimeout,
+                        [&pendingReq]() { return pendingReq.responseReceived; });
                 }
+
+                if (pendingReq.responseReceived && pendingReq.response) {
+                    responseReceived = true;
+                    // 正确处理指针转换和所有权转移
+                    auto* castedPtr = dynamic_cast<protocol::QueryStatusResponse*>(pendingReq.response.get());
+                    if (castedPtr) {
+                        statusResp = std::unique_ptr<protocol::QueryStatusResponse>(castedPtr);
+                        pendingReq.response.release();  // 释放所有权但不删除对象
+                    }
+                }
+
+                pendingRequests_.erase(seqNum);
             }
 
-            pendingRequests_.erase(seqNum);
+            if (!responseReceived) {
+                TaskStatusResult result;
+                result.errorCode = ErrorCode_QueryStatus::TIMEOUT;
+                return result;
+            }
+
+            if (!statusResp) {
+                TaskStatusResult result;
+                result.errorCode = ErrorCode_QueryStatus::INVALID_RESPONSE;
+                return result;
+            }
+
+            // 转换为SDK的TaskStatusResult
+            TaskStatusResult result;
+            result.status = static_cast<NavigationStatus>(statusResp->status);
+            result.errorCode = static_cast<ErrorCode_QueryStatus>(statusResp->errorCode);
+            result.value = statusResp->value;
+
+            return result;
+
+        } catch (const std::exception& e) {
+            std::cerr << "queryTaskStatus 异常: " << e.what() << std::endl;
+            TaskStatusResult result;
+            result.errorCode = ErrorCode_QueryStatus::UNKNOWN_ERROR;
+            return result;
+        } catch (...) {
+            std::cerr << "queryTaskStatus 未知异常" << std::endl;
+            TaskStatusResult result;
+            result.errorCode = ErrorCode_QueryStatus::UNKNOWN_ERROR;
+            return result;
         }
-
-        if (!statusResp) {
-            throw std::runtime_error("收到无效的任务状态响应");
-        }
-
-        // 转换为SDK的TaskStatusResult
-        TaskStatusResult result;
-        result.timestamp = statusResp->timestamp;
-        result.status = static_cast<NavigationStatus>(statusResp->status);
-        result.errorCode = static_cast<ErrorCode>(statusResp->errorCode);
-        result.value = statusResp->value;
-
-        return result;
     }
 
     // 实现网络回调接口
@@ -453,9 +486,8 @@ public:
             if (callback) {
                 auto resp = static_cast<protocol::NavigationTaskResponse*>(message.get());
                 result.value = resp->value;
-                result.errorCode = static_cast<ErrorCode>(resp->errorCode);
+                result.errorCode = static_cast<ErrorCode_Navigation>(resp->errorCode);
                 result.errorStatus = resp->errorStatus;
-                result.timestamp = resp->timestamp;
                 safeCallback(callback, "导航结果", result);
             }
 

@@ -21,18 +21,26 @@ enum class MessageType {
 };
 
 /**
- * @brief 错误码枚举
+ * @brief 下发导航任务响应错误码枚举
  */
-enum class ErrorCode {
+enum class ErrorCode_Navigation {
     SUCCESS = 0,
     FAILURE = 1,
     CANCELLED = 2
 };
 
 /**
- * @brief 导航状态枚举
+ * @brief 取消任务响应错误码枚举
  */
-enum class NavigationStatus {
+enum class ErrorCode_CancelTask {
+    SUCCESS = 0,
+    FAILURE = 1,
+};
+
+/**
+ * @brief 查询任务状态响应错误码枚举
+ */
+enum class ErrorCode_QueryStatus {
     COMPLETED = 0,
     EXECUTING = 1,
     FAILED = -1

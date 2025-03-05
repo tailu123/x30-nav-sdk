@@ -85,24 +85,6 @@ public:
 
     bool deserialize(const std::string&) override {
         return false;
-        // try {
-        //     rapidxml::xml_document<> doc;
-        //     std::vector<char> buffer(data.begin(), data.end());
-        //     buffer.push_back('\0');
-        //     doc.parse<rapidxml::parse_non_destructive>(&buffer[0]);
-
-        //     rapidxml::xml_node<>* root = doc.first_node("PatrolDevice");
-        //     if (!root) return false;
-
-        //     rapidxml::xml_node<>* time_node = root->first_node("Time");
-        //     if (time_node) {
-        //         timestamp = time_node->value();
-        //     }
-
-        //     return true;
-        // } catch (const std::exception& e) {
-        //     return false;
-        // }
     }
 };
 
@@ -137,52 +119,16 @@ public:
     int chargeState = 0;
     int controlMode = 0;
     int mapUpdateState = 0;
-    std::string timestamp;
 
-    GetRealTimeStatusResponse() : timestamp(getCurrentTimestamp()) {}
+    GetRealTimeStatusResponse() {}
 
     MessageType getType() const override {
         return MessageType::GET_REAL_TIME_STATUS_RESP;
     }
 
     std::string serialize() const override {
-        // 使用XML格式
-        std::stringstream ss;
-        ss << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
-        ss << "<PatrolDevice>\n";
-        ss << "  <Type>1002</Type>\n";
-        ss << "  <Command>1</Command>\n";
-        ss << "  <Time>" << timestamp << "</Time>\n";
-        ss << "  <Items>\n";
-        ss << "    <MotionState>" << motionState << "</MotionState>\n";
-        ss << "    <PosX>" << posX << "</PosX>\n";
-        ss << "    <PosY>" << posY << "</PosY>\n";
-        ss << "    <PosZ>" << posZ << "</PosZ>\n";
-        ss << "    <AngleYaw>" << angleYaw << "</AngleYaw>\n";
-        ss << "    <Roll>" << roll << "</Roll>\n";
-        ss << "    <Pitch>" << pitch << "</Pitch>\n";
-        ss << "    <Yaw>" << yaw << "</Yaw>\n";
-        ss << "    <Speed>" << speed << "</Speed>\n";
-        ss << "    <CurOdom>" << curOdom << "</CurOdom>\n";
-        ss << "    <SumOdom>" << sumOdom << "</SumOdom>\n";
-        ss << "    <CurRuntime>" << curRuntime << "</CurRuntime>\n";
-        ss << "    <SumRuntime>" << sumRuntime << "</SumRuntime>\n";
-        ss << "    <Res>" << res << "</Res>\n";
-        ss << "    <X0>" << x0 << "</X0>\n";
-        ss << "    <Y0>" << y0 << "</Y0>\n";
-        ss << "    <H>" << h << "</H>\n";
-        ss << "    <Electricity>" << electricity << "</Electricity>\n";
-        ss << "    <Location>" << location << "</Location>\n";
-        ss << "    <RTKState>" << RTKState << "</RTKState>\n";
-        ss << "    <OnDockState>" << onDockState << "</OnDockState>\n";
-        ss << "    <GaitState>" << gaitState << "</GaitState>\n";
-        ss << "    <MotorState>" << motorState << "</MotorState>\n";
-        ss << "    <ChargeState>" << chargeState << "</ChargeState>\n";
-        ss << "    <ControlMode>" << controlMode << "</ControlMode>\n";
-        ss << "    <MapUpdateState>" << mapUpdateState << "</MapUpdateState>\n";
-        ss << "  </Items>\n";
-        ss << "</PatrolDevice>";
-        return ss.str();
+        // sdk不负责响应的序列化
+        return "";
     }
 
     bool deserialize(const std::string& data) override {
@@ -194,11 +140,6 @@ public:
 
             rapidxml::xml_node<>* root = doc.first_node("PatrolDevice");
             if (!root) return false;
-
-            rapidxml::xml_node<>* time_node = root->first_node("Time");
-            if (time_node) {
-                timestamp = time_node->value();
-            }
 
             rapidxml::xml_node<>* items_node = root->first_node("Items");
             if (!items_node) return false;
@@ -295,61 +236,6 @@ public:
 
     bool deserialize(const std::string&) override {
         return false;
-        // try {
-        //     rapidxml::xml_document<> doc;
-        //     std::vector<char> buffer(data.begin(), data.end());
-        //     buffer.push_back('\0');
-        //     doc.parse<rapidxml::parse_non_destructive>(&buffer[0]);
-
-        //     rapidxml::xml_node<>* root = doc.first_node("PatrolDevice");
-        //     if (!root) return false;
-
-        //     rapidxml::xml_node<>* time_node = root->first_node("Time");
-        //     if (time_node) {
-        //         timestamp = time_node->value();
-        //     }
-
-        //     // 清空现有点
-        //     points.clear();
-
-        //     // 解析所有Items节点
-        //     for (rapidxml::xml_node<>* items_node = root->first_node("Items");
-        //             items_node;
-        //             items_node = items_node->next_sibling("Items")) {
-
-        //         NavigationPoint point;
-
-        //         // 解析各个字段
-        //         auto get_node_value = [&](const char* name, auto& value) {
-        //             rapidxml::xml_node<>* node = items_node->first_node(name);
-        //             if (node) {
-        //                 std::stringstream ss(node->value());
-        //                 ss >> value;
-        //             }
-        //         };
-
-        //         get_node_value("MapId", point.mapId);
-        //         get_node_value("Value", point.value);
-        //         get_node_value("PosX", point.posX);
-        //         get_node_value("PosY", point.posY);
-        //         get_node_value("PosZ", point.posZ);
-        //         get_node_value("AngleYaw", point.angleYaw);
-        //         get_node_value("PointInfo", point.pointInfo);
-        //         get_node_value("Gait", point.gait);
-        //         get_node_value("Speed", point.speed);
-        //         get_node_value("Manner", point.manner);
-        //         get_node_value("ObsMode", point.obsMode);
-        //         get_node_value("NavMode", point.navMode);
-        //         get_node_value("Terrain", point.terrain);
-        //         get_node_value("Posture", point.posture);
-
-        //         points.push_back(point);
-        //     }
-
-        //     return true;
-        // } catch (const std::exception& e) {
-        //     return false;
-        // }
     }
 };
 
@@ -359,31 +245,18 @@ public:
 class NavigationTaskResponse : public MessageBase {
 public:
     int value = 0;
-    ErrorCode errorCode = ErrorCode::SUCCESS;
+    ErrorCode_Navigation errorCode = ErrorCode_Navigation::SUCCESS;
     int errorStatus = 0;
-    std::string timestamp;
 
-    NavigationTaskResponse() : timestamp(getCurrentTimestamp()) {}
+    NavigationTaskResponse() {}
 
     MessageType getType() const override {
         return MessageType::NAVIGATION_TASK_RESP;
     }
 
     std::string serialize() const override {
-        // 使用XML格式
-        std::stringstream ss;
-        ss << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
-        ss << "<PatrolDevice>\n";
-        ss << "<Type>1003</Type>\n";
-        ss << "<Command>1</Command>\n";
-        ss << "<Time>" << timestamp << "</Time>\n";
-        ss << "<Items>\n";
-        ss << "  <Value>" << value << "</Value>\n";
-        ss << "  <ErrorCode>" << static_cast<int>(errorCode) << "</ErrorCode>\n";
-        ss << "  <ErrorStatus>" << errorStatus << "</ErrorStatus>\n";
-        ss << "</Items>\n";
-        ss << "</PatrolDevice>";
-        return ss.str();
+        // sdk不负责响应的序列化
+        return "";
     }
 
     bool deserialize(const std::string& data) override {
@@ -395,11 +268,6 @@ public:
 
             rapidxml::xml_node<>* root = doc.first_node("PatrolDevice");
             if (!root) return false;
-
-            rapidxml::xml_node<>* time_node = root->first_node("Time");
-            if (time_node) {
-                timestamp = time_node->value();
-            }
 
             rapidxml::xml_node<>* items_node = root->first_node("Items");
             if (!items_node) return false;
@@ -418,7 +286,7 @@ public:
             // 解析错误码
             int error_code_value = 0;
             get_node_value("ErrorCode", error_code_value);
-            errorCode = static_cast<ErrorCode>(error_code_value);
+            errorCode = static_cast<ErrorCode_Navigation>(error_code_value);
 
             get_node_value("ErrorStatus", errorStatus);
 
@@ -457,24 +325,6 @@ public:
 
     bool deserialize(const std::string&) override {
         return false;
-        // try {
-        //     rapidxml::xml_document<> doc;
-        //     std::vector<char> buffer(data.begin(), data.end());
-        //     buffer.push_back('\0');
-        //     doc.parse<rapidxml::parse_non_destructive>(&buffer[0]);
-
-        //     rapidxml::xml_node<>* root = doc.first_node("PatrolDevice");
-        //     if (!root) return false;
-
-        //     rapidxml::xml_node<>* time_node = root->first_node("Time");
-        //     if (time_node) {
-        //         timestamp = time_node->value();
-        //     }
-
-        //     return true;
-        // } catch (const std::exception& e) {
-        //     return false;
-        // }
     }
 };
 
@@ -484,31 +334,18 @@ public:
 class QueryStatusResponse : public MessageBase {
 public:
     int value = 0;
-    NavigationStatus status = NavigationStatus::COMPLETED;
-    ErrorCode errorCode = ErrorCode::SUCCESS;
-    std::string timestamp;
+    int status = 0;
+    ErrorCode_QueryStatus errorCode = ErrorCode_QueryStatus::COMPLETED;
 
-    QueryStatusResponse() : timestamp(getCurrentTimestamp()) {}
+    QueryStatusResponse() {}
 
     MessageType getType() const override {
         return MessageType::QUERY_STATUS_RESP;
     }
 
     std::string serialize() const override {
-        // 使用XML格式
-        std::stringstream ss;
-        ss << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
-        ss << "<PatrolDevice>\n";
-        ss << "<Type>1007</Type>\n";
-        ss << "<Command>1</Command>\n";
-        ss << "<Time>" << timestamp << "</Time>\n";
-        ss << "<Items>\n";
-        ss << "  <Value>" << value << "</Value>\n";
-        ss << "  <Status>" << static_cast<int>(status) << "</Status>\n";
-        ss << "  <ErrorCode>" << static_cast<int>(errorCode) << "</ErrorCode>\n";
-        ss << "</Items>\n";
-        ss << "</PatrolDevice>";
-        return ss.str();
+        // sdk不负责响应的序列化
+        return "";
     }
 
     bool deserialize(const std::string& data) override {
@@ -520,11 +357,6 @@ public:
 
             rapidxml::xml_node<>* root = doc.first_node("PatrolDevice");
             if (!root) return false;
-
-            rapidxml::xml_node<>* time_node = root->first_node("Time");
-            if (time_node) {
-                timestamp = time_node->value();
-            }
 
             rapidxml::xml_node<>* items_node = root->first_node("Items");
             if (!items_node) return false;
@@ -541,14 +373,12 @@ public:
             get_node_value("Value", value);
 
             // 解析状态
-            int status_value = 0;
-            get_node_value("Status", status_value);
-            status = static_cast<NavigationStatus>(status_value);
+            get_node_value("Status", status);
 
             // 解析错误码
             int error_code_value = 0;
             get_node_value("ErrorCode", error_code_value);
-            errorCode = static_cast<ErrorCode>(error_code_value);
+            errorCode = static_cast<ErrorCode_QueryStatus>(error_code_value);
 
             return true;
         } catch (const std::exception& e) {
@@ -585,24 +415,6 @@ public:
 
     bool deserialize(const std::string&) override {
         return false;
-        // try {
-            // rapidxml::xml_document<> doc;
-            // std::vector<char> buffer(data.begin(), data.end());
-            // buffer.push_back('\0');
-            // doc.parse<rapidxml::parse_non_destructive>(&buffer[0]);
-
-            // rapidxml::xml_node<>* root = doc.first_node("PatrolDevice");
-            // if (!root) return false;
-
-            // rapidxml::xml_node<>* time_node = root->first_node("Time");
-            // if (time_node) {
-            //     timestamp = time_node->value();
-            // }
-
-            // return true;
-        // } catch (const std::exception& e) {
-        //     return false;
-        // }
     }
 };
 
@@ -611,28 +423,17 @@ public:
  */
 class CancelTaskResponse : public MessageBase {
 public:
-    ErrorCode errorCode = ErrorCode::SUCCESS;
-    std::string timestamp;
+    ErrorCode_CancelTask errorCode = ErrorCode_CancelTask::SUCCESS;
 
-    CancelTaskResponse() : timestamp(getCurrentTimestamp()) {}
+    CancelTaskResponse() {}
 
     MessageType getType() const override {
         return MessageType::CANCEL_TASK_RESP;
     }
 
     std::string serialize() const override {
-        // 使用XML格式
-        std::stringstream ss;
-        ss << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
-        ss << "<PatrolDevice>\n";
-        ss << "<Type>1004</Type>\n";
-        ss << "<Command>1</Command>\n";
-        ss << "<Time>" << timestamp << "</Time>\n";
-        ss << "<Items>\n";
-        ss << "  <ErrorCode>" << static_cast<int>(errorCode) << "</ErrorCode>\n";
-        ss << "</Items>\n";
-        ss << "</PatrolDevice>";
-        return ss.str();
+        // sdk不负责响应的序列化
+        return "";
     }
 
     bool deserialize(const std::string& data) override {
@@ -645,11 +446,6 @@ public:
             rapidxml::xml_node<>* root = doc.first_node("PatrolDevice");
             if (!root) return false;
 
-            rapidxml::xml_node<>* time_node = root->first_node("Time");
-            if (time_node) {
-                timestamp = time_node->value();
-            }
-
             rapidxml::xml_node<>* items_node = root->first_node("Items");
             if (!items_node) return false;
 
@@ -659,7 +455,7 @@ public:
             if (error_code_node) {
                 std::stringstream ss(error_code_node->value());
                 ss >> error_code_value;
-                errorCode = static_cast<ErrorCode>(error_code_value);
+                errorCode = static_cast<ErrorCode_CancelTask>(error_code_value);
             }
 
             return true;

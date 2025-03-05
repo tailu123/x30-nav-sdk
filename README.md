@@ -11,7 +11,6 @@ X30 机器狗导航 SDK 提供了一套简单易用的接口，用于控制和�
 - 发送导航任务指令
 - 取消正在执行的导航任务
 - 查询当前导航任务的执行状态
-- 异步事件通知机制
 
 ## 系统要求
 
@@ -45,6 +44,9 @@ int main() {
     // 创建 SDK 实例
     nav_sdk::NavigationSdk sdk;
 
+    // 打印SDK版本
+    std::cout << "SDK版本: " << nav_sdk::NavigationSdk::getVersion() << std::endl;
+
     // 设置事件回调
     sdk.setEventCallback([](const nav_sdk::Event& event) {
         std::cout << "收到事件: " << event.toString() << std::endl;
@@ -71,19 +73,19 @@ int main() {
     points.push_back(point);
 
     // 发送导航任务
-    auto result = sdk.startNavigation(points);
-    if (result.errorCode == nav_sdk::ErrorCode::SUCCESS) {
-        std::cout << "导航任务已启动，任务ID: " << result.taskId << std::endl;
-    } else {
-        std::cerr << "导航任务启动失败，错误码: " << static_cast<int>(result.errorCode) << std::endl;
-    }
+    sdk.startNavigationAsync(points, [](const nav_sdk::NavigationResult& result) {
+        std::cout << "导航任务已完成，errorCode: " << result.errorCode << std::endl;
+    });
 
     // 等待任务完成
     std::this_thread::sleep_for(std::chrono::seconds(5));
 
     // 查询任务状态
     auto taskStatus = sdk.queryTaskStatus();
-    std::cout << "任务状态: " << static_cast<int>(taskStatus.status) << std::endl;
+    std::cout << "导航任务状态: " << static_cast<int>(taskStatus.status) << std::endl;
+
+    // 取消导航任务
+    sdk.cancelNavigation();
 
     // 断开连接
     sdk.disconnect();
