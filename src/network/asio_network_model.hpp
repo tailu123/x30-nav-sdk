@@ -1,12 +1,14 @@
 #pragma once
 
 #include "base_network_model.hpp"
+#include "types.h"
 #include <boost/asio.hpp>
 #include <thread>
 #include <mutex>
 #include <queue>
 #include <atomic>
 #include <condition_variable>
+#include <chrono>
 
 namespace network {
 
@@ -59,6 +61,12 @@ public:
      */
     bool sendMessage(const protocol::IMessage& message) override;
 
+    /**
+     * @brief 设置连接超时时间
+     * @param timeout 超时时间（毫秒）
+     */
+    void setConnectionTimeout(std::chrono::milliseconds timeout);
+
 private:
     /**
      * @brief 启动接收循环
@@ -93,6 +101,7 @@ private:
     std::array<char, 4096> receive_buffer_;
     INetworkCallback& callback_;
     std::string receive_data_;
+    std::chrono::milliseconds connection_timeout_{5000}; // 连接超时时间，默认5秒
 };
 
 } // namespace network

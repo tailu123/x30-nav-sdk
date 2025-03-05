@@ -105,13 +105,13 @@ void printTaskStatus(const nav_sdk::TaskStatusResult& status) {
     std::cout << "状态: ";
 
     switch (status.status) {
-        case nav_sdk::NavigationStatus::COMPLETED:
+        case nav_sdk::Status_QueryStatus::COMPLETED:
             std::cout << "已完成" << std::endl;
             break;
-        case nav_sdk::NavigationStatus::EXECUTING:
+        case nav_sdk::Status_QueryStatus::EXECUTING:
             std::cout << "执行中" << std::endl;
             break;
-        case nav_sdk::NavigationStatus::FAILED:
+        case nav_sdk::Status_QueryStatus::FAILED:
             std::cout << "失败" << std::endl;
             break;
     }
@@ -129,7 +129,7 @@ void printNavigationResult(const nav_sdk::NavigationResult& result) {
     std::cout << "===== 导航任务结果 =====" << std::endl;
     std::cout << "目标点编号: " << result.value << std::endl;
     std::cout << "错误码: " << static_cast<int>(result.errorCode) << std::endl;
-    std::cout << "错误状态: " << result.errorStatus << std::endl;
+    std::cout << "错误状态: " << static_cast<int>(result.errorStatus) << std::endl;
     // std::cout << "时间戳: " << result.timestamp << std::endl;
     std::cout << "========================" << std::endl;
 }
@@ -159,7 +159,7 @@ int main(int argc, char* argv[]) {
     try {
         // 创建 SDK 实例
         nav_sdk::SdkOptions options;
-        options.connectionTimeout = std::chrono::milliseconds(3000);
+        options.connectionTimeout = std::chrono::milliseconds(5000);
         options.requestTimeout = std::chrono::milliseconds(3000);
 
         nav_sdk::NavigationSdk sdk(options);

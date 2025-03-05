@@ -72,21 +72,6 @@ std::string Event::toString() const {
         case EventType::DISCONNECTED:
             ss << "已断开连接";
             break;
-        case EventType::NAVIGATION_STARTED:
-            ss << "导航任务已开始";
-            break;
-        case EventType::NAVIGATION_COMPLETED:
-            ss << "导航任务已完成";
-            break;
-        case EventType::NAVIGATION_FAILED:
-            ss << "导航任务失败";
-            break;
-        case EventType::STATUS_UPDATED:
-            ss << "状态已更新";
-            break;
-        case EventType::ERROR_OCCURRED:
-            ss << "发生错误";
-            break;
     }
 
     // 添加消息
@@ -137,6 +122,8 @@ public:
         : options_(options),
           connected_(false),
           network_model_(std::make_unique<::network::AsioNetworkModel>(*this)) {
+        // 设置网络模型的连接超时时间
+        network_model_->setConnectionTimeout(options_.connectionTimeout);
     }
 
     ~NavigationSdkImpl() {
@@ -440,7 +427,7 @@ public:
 
             // 转换为SDK的TaskStatusResult
             TaskStatusResult result;
-            result.status = static_cast<NavigationStatus>(statusResp->status);
+            result.status = static_cast<Status_QueryStatus>(statusResp->status);
             result.errorCode = static_cast<ErrorCode_QueryStatus>(statusResp->errorCode);
             result.value = statusResp->value;
 
@@ -487,7 +474,7 @@ public:
                 auto resp = static_cast<protocol::NavigationTaskResponse*>(message.get());
                 result.value = resp->value;
                 result.errorCode = static_cast<ErrorCode_Navigation>(resp->errorCode);
-                result.errorStatus = resp->errorStatus;
+                result.errorStatus = static_cast<ErrorStatus_Navigation>(resp->errorStatus);
                 safeCallback(callback, "导航结果", result);
             }
 

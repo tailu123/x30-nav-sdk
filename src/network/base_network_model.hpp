@@ -2,7 +2,7 @@
 
 #include <string>
 #include <memory>
-#include "../protocol/message_interface.hpp"
+#include "protocol/message_interface.hpp"
 
 namespace network {
 

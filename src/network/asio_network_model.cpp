@@ -1,5 +1,5 @@
 #include "asio_network_model.hpp"
-#include "../protocol/x30_protocol.hpp"
+#include "protocol/x30_protocol.hpp"
 #include <iostream>
 #include <chrono>
 #include <sstream>
@@ -18,24 +18,62 @@ AsioNetworkModel::~AsioNetworkModel() {
     disconnect();
 }
 
+void AsioNetworkModel::setConnectionTimeout(std::chrono::milliseconds timeout) {
+    connection_timeout_ = timeout;
+}
+
 bool AsioNetworkModel::connect(const std::string& host, uint16_t port) {
     if (connected_) {
         return true;
     }
 
     try {
+        // 重置io_context，确保它处于干净状态
+        io_context_.restart();
+
         boost::asio::ip::tcp::resolver resolver(io_context_);
         auto endpoints = resolver.resolve(host, std::to_string(port));
 
-        boost::system::error_code error;
-        boost::asio::connect(socket_, endpoints, error);
+        // 设置连接超时
+        socket_.close(); // 确保套接字是关闭的
+        socket_ = boost::asio::ip::tcp::socket(io_context_); // 重新创建套接字
 
-        if (error) {
-            std::cerr << "连接失败: " << error.message() << std::endl;
+        // 使用async_connect启动异步连接
+        boost::system::error_code connect_ec;
+        bool connect_completed = false;
+
+        // 开始异步连接
+        boost::asio::async_connect(socket_, endpoints,
+            [&connect_ec, &connect_completed](const boost::system::error_code& ec, const boost::asio::ip::tcp::endpoint&) {
+                connect_ec = ec;
+                connect_completed = true;
+            });
+
+        // 运行io_context，但设置超时
+        // 这里使用run_one_for，它会运行一个操作或等待指定的时间
+        // 如果连接在超时前完成，它会立即返回
+        if (!io_context_.run_one_for(connection_timeout_)) {
+            // 超时，取消所有操作
+            socket_.cancel();
+            socket_.close();
+            std::cerr << "连接超时" << std::endl;
             return false;
         }
 
+        // 检查连接是否成功
+        if (connect_ec || !connect_completed) {
+            std::cerr << "连接失败: " << connect_ec.message() << std::endl;
+            socket_.close();
+            return false;
+        }
+
+        // 连接成功
         connected_ = true;
+
+        // 确保之前的IO线程已经结束
+        if (io_thread_.joinable()) {
+            io_thread_.join();
+        }
 
         // 启动IO线程
         io_thread_ = std::thread(&AsioNetworkModel::ioThreadFunc, this);
@@ -217,13 +255,19 @@ void AsioNetworkModel::ioThreadFunc() {
         // 使用 work guard 防止 io_context 在没有任务时退出
         boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work_guard(io_context_.get_executor());
 
-        // 重置 io_context 以确保它可以重新运行
-        io_context_.restart();
-
-        // 运行 io_context
+        // 运行 io_context，直到显式调用 stop()
         io_context_.run();
     } catch (const std::exception& e) {
         std::cerr << "IO线程异常: " << e.what() << std::endl;
+
+        // 如果发生异常，尝试断开连接
+        if (connected_) {
+            try {
+                disconnect();
+            } catch (...) {
+                // 忽略断开连接时的异常
+            }
+        }
     }
 }
 
