@@ -97,7 +97,6 @@ private:
     boost::asio::io_context::strand strand_; // 用于序列化异步操作的执行器
     std::thread io_thread_;
     std::atomic<bool> connected_;
-    // std::mutex mutex_;
     std::array<char, 4096> receive_buffer_;
     INetworkCallback& callback_;
     std::string receive_data_;

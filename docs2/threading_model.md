@@ -58,7 +58,6 @@ IO 线程由 Boost.Asio 的 `io_context` 管理，在 `AsioNetworkModel` 类中�
 
 回调线程负责执行用户提供的回调函数，包括：
 
-- 事件回调（`EventCallback`）
 - 导航任务结果回调（`NavigationResultCallback`）
 
 回调线程是 IO 线程，但 SDK 使用 `strand` 机制确保回调函数的线程安全性。

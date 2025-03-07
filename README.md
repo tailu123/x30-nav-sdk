@@ -1,16 +1,16 @@
-# X30 机器狗导航 SDK
+# X30 RobotServer SDK
 
 ## 简介
 
-X30 机器狗导航 SDK 提供了一套简单易用的接口，用于控制和监控机器狗的导航任务。该 SDK 封装了底层的协议和网络通信细节，使开发者能够专注于业务逻辑的实现。
+X30 RobotServer SDK 提供了一套简单易用的接口，用于控制和监控机器狗的导航任务。该 SDK 封装了底层的协议和网络通信细节，使开发者能够专注于业务逻辑的实现。
 
 ## 功能特性
 
 - 连接和断开与机器狗控制系统的通信
-- 获取机器狗的实时状态信息
-- 发送导航任务指令
-- 取消正在执行的导航任务
-- 查询当前导航任务的执行状态
+- 1002 获取机器狗的实时状态信息
+- 1003 发送导航任务指令
+- 1004 取消正在执行的导航任务
+- 1007 查询当前导航任务的执行状态
 
 ## 系统要求
 
@@ -22,79 +22,62 @@ X30 机器狗导航 SDK 提供了一套简单易用的接口，用于控制和�
 
 ## 安装
 
+### 安装依赖
+
+```bash
+chmod +x scripts/install_dependencies.sh
+./scripts/install_dependencies.sh
+```
+
 ### 使用 CMake 构建
 
 ```bash
+git clone https://github.com/tailu123/x30-nav-sdk.git
+cd x30_nav_sdk
 mkdir build && cd build
 cmake ..
 make
-make install
+make install(可选)
+./bin/basic_example 192.168.1.106 30000
 ```
 
 ## 快速开始
 
-以下是一个简单的示例，展示如何使用 SDK 连接到机器狗并发送导航任务：
+参考 `examples/basic/basic_example.cpp` 文件，实现了一个简单的示例，展示如何使用 SDK 连接到机器狗并发送导航任务。
 
-```cpp
-#include <navigation_sdk.h>
-#include <types.h>
-#include <iostream>
+1.先建图参考用户手册
+2.手柄新建导航路线同步到导航主机，覆盖 `./examples/basic/default_navigation_points.json` 文件
+3.运行示例程序
 
-int main() {
-    // 创建 SDK 实例
-    nav_sdk::NavigationSdk sdk;
-
-    // 打印SDK版本
-    std::cout << "SDK版本: " << nav_sdk::NavigationSdk::getVersion() << std::endl;
-
-    // 连接到机器狗控制系统
-    if (!sdk.connect("192.168.1.100", 8080)) {
-        std::cerr << "连接失败!" << std::endl;
-        return 1;
-    }
-
-    // 获取实时状态
-    auto status = sdk.request1002_RunTimeStatus();
-    std::cout << "当前位置: (" << status.posX << ", " << status.posY << ", " << status.posZ << ")" << std::endl;
-
-    // 创建导航点
-    std::vector<nav_sdk::NavigationPoint> points;
-    nav_sdk::NavigationPoint point;
-    point.posX = 10.0;
-    point.posY = 5.0;
-    point.posZ = 0.0;
-    point.angleYaw = 90.0;
-    point.speed = 2;
-    points.push_back(point);
-
-    // 发送导航任务
-    sdk.request1003_StartNavTask(points, [](const nav_sdk::NavigationResult& result) {
-        std::cout << "导航任务已完成，errorCode: " << result.errorCode << std::endl;
-    });
-
-    // 等待任务完成
-    std::this_thread::sleep_for(std::chrono::seconds(5));
-
-    // 查询任务状态
-    auto taskStatus = sdk.request1007_NavTaskStatus();
-    std::cout << "导航任务状态: " << static_cast<int>(taskStatus.status) << std::endl;
-
-    // 取消导航任务
-    sdk.request1004_CancelNavTask();
-
-    // 断开连接
-    sdk.disconnect();
-
-    return 0;
-}
+```bash
+./bin/basic_example 192.168.1.106 30000
 ```
 
-更多示例请参考 `examples` 目录。
+## 文档目录
 
-## API 文档
+1. [快速入门指南](docs2/quick_start.md) - 快速上手使用 SDK 的基本功能
+2. [SDK 架构概述](docs2/architecture.md) - SDK 的整体架构和设计理念
+3. [API 参考](docs2/api_reference.md) - 详细的 API 使用说明和示例
 
-详细的 API 文档请参考 `docs` 目录或查看头文件中的注释。
+## 技术特点
+
+- 基于 C++17 标准开发
+- 使用 Boost.Asio 实现高效的网络通信
+- 支持 XML 格式的消息交互
+- 提供同步和异步两种操作方式
+- 线程安全设计，支持多线程环境
+
+## 获取帮助
+
+如果您在使用过程中遇到任何问题，或者有任何建议和反馈，请通过以下方式联系我们：
+
+- 提交 GitHub Issue
+- 发送邮件至 support@example.com
 
 ## 许可证
 
 本项目采用 MIT 许可证。详情请参阅 LICENSE 文件。
+
+## 感谢
+
+感谢您使用 X30 RobotServer SDK！

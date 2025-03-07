@@ -1,8 +1,8 @@
-# X30 机器狗导航 SDK 架构设计
+# X30 机器狗RobotServer SDK 架构设计
 
 ## 1. 架构概述
 
-X30 机器狗导航 SDK 采用**简洁的分层架构**设计，确保系统具有**高可维护性**和**良好扩展性**。本文档简要介绍 SDK 的整体架构和核心组件。
+X30 机器狗RobotServer SDK 采用**简洁的分层架构**设计，确保系统具有**高可维护性**和**良好扩展性**。本文档简要介绍 SDK 的整体架构和核心组件。
 
 ### 1.1 核心层次结构
 
@@ -10,7 +10,7 @@ SDK 由以下三个主要层次组成：
 
 | 层次 | 职责 | 关键组件 |
 |------|------|---------|
-| **应用层** | 负责调用接口层提供的接口，集成实现业务逻辑 | 
+| **应用层** | 负责调用接口层提供的接口，集成实现业务逻辑 | ___ |
 | **接口层** | 负责请求/响应的管理，对外提供功能接口 | RobotServerSdk 类、RobotServerSdkImpl 类 |
 | **通信层** | 负责协议序列化，数据传输 | AsioNetworkModel 类、Serializer 类 |
 
@@ -33,7 +33,7 @@ SDK 由以下三个主要层次组成：
 ┌────────────────────────────────────────────────────────────────────────┐
 │                      【通信层（Communication Layer）】                    │
 │                    主要功能：负责协议序列化，数据传输                        │
-│   关键类：AsioNetworkModel 类（网络通信），Serializer 类（协议序列化/反序列化） │
+│   关键类：Serializer 类（协议序列化/反序列化），AsioNetworkModel 类（网络通信） │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -72,14 +72,14 @@ SDK 由以下三个主要层次组成：
 
 #### 核心组件
 
-- **AsioNetworkModel 类**：基于 Boost.Asio 的网络实现
 - **Serializer 类**：处理消息的序列化和反序列化
+- **AsioNetworkModel 类**：基于 Boost.Asio 的网络实现
 - **INetworkCallback 接口**：定义网络层回调接口
 
 #### 代码位置
 
-- `src/network/asio_network_model.hpp/cpp`：网络通信实现
 - `src/protocol/serializer.hpp/cpp`：协议处理实现
+- `src/network/asio_network_model.hpp/cpp`：网络通信实现
 
 #### 设计特点
 
@@ -107,7 +107,6 @@ classDiagram
 
     class RobotServerSdkImpl {
         -network_model_: unique_ptr<AsioNetworkModel>
-        -connected_: atomic<bool>
         +onMessageReceived(message: unique_ptr<IMessage>) // 处理响应，支持请求与响应匹配
         -generateSequenceNumber()
     }
@@ -122,6 +121,8 @@ classDiagram
         -io_context_: boost::asio::io_context
         -socket_: boost::asio::ip::tcp::socket
         -strand_: boost::asio::io_context::strand
+        -io_thread_: std::thread
+        -connected_: atomic<bool>
         +connect(host: string, port: uint16_t)
         +disconnect()
         +sendMessage(message: IMessage)
@@ -188,7 +189,8 @@ sequenceDiagram
 
 ### 4.4 connect 流程
 
-实线箭头表示用户线程，虚线箭头表示IO线程
+实线箭头表示用户线程; 连接时期虚线箭头依赖系统底层IO; 收发数据时虚线箭头表示IO线程
+
 
 ```mermaid
 sequenceDiagram
@@ -196,18 +198,39 @@ sequenceDiagram
     participant SDK as RobotServerSdk
     participant Impl as RobotServerSdkImpl
     participant Net as AsioNetworkModel
+    participant IOThread as IO线程
     participant Dog as X30机器狗系统
 
     %% Connection Flow
     App->>SDK: connect(host, port)
     SDK->>Impl: connect(host, port)
     Impl->>Net: connect(host, port)
-    Net->>Dog: boost::asio::async_connect
-    Net->>Net: run_one_for(connection_timeout_) 设置超时
-    Dog-->>Net: boost::asio::async_connect callback
-    Net->>Impl: 返回连接结果
-    Impl->>SDK: 返回连接结果
-    SDK->>App: 返回连接结果
+    
+    %% 异步连接请求
+    Net->>Dog: async_connect(socket_, endpoints, callback)
+    
+    %% 主线程等待连接完成或超时
+    Net->>Net: run_one_for(connection_timeout_)
+    
+    Net-->>Dog: TCP连接请求
+    Dog-->>Net: 连接响应
+    Net-->>Net: 调用连接完成回调,connected_ = true
+    
+    %% 启动专用IO线程
+    Net->>IOThread: 创建并启动线程(ioThreadFunc)
+    Note over IOThread,IOThread: IO线程持续运行io_context_.run()
+    
+    %% 启动第一次接收
+    Net->>Net: startReceive()
+    
+    %% 返回连接结果
+    Net->>Impl: 返回true(连接成功)
+    Impl->>SDK: 返回true
+    SDK->>App: 返回true
+    
+    %% 后续的异步操作
+    IOThread-->>Dog: send
+    Dog-->>IOThread: receive
 ```
 
 ### 4.5 请求流程(同步) 1002, 1004, 1007
@@ -221,6 +244,7 @@ sequenceDiagram
     participant Impl as RobotServerSdkImpl
     participant Proto as Serializer
     participant Net as AsioNetworkModel
+    participant IO as IO线程
     participant Dog as X30机器狗系统
 
     %% Request Flow
@@ -229,12 +253,14 @@ sequenceDiagram
     Impl->>Impl: generateSequenceNumber()
     Impl->>Proto: sendMessage()
     Proto->>Net: serializeMessage()
-    Net->>Dog: boost::asio::async_write()
+    Net->>IO: 将async_write请求放入io_context队列
     Net->>Impl: return
     Impl->>Impl: wait_for(request_timeout) 等待响应
+    IO-->>Dog: 执行boost::asio::async_write()
 
     %% Response Flow
-    Dog-->>Net: boost::asio::async_read_some()
+    Dog-->>IO: 返回响应数据
+    IO-->>Net: 执行async_read_some回调
     Net-->>Proto: deserializeMessage(data)
     Proto-->>Impl: onMessageReceived(message)
     Impl-->>Impl: 请求与响应匹配
@@ -254,6 +280,7 @@ sequenceDiagram
     participant Impl as RobotServerSdkImpl
     participant Proto as Serializer
     participant Net as AsioNetworkModel
+    participant IO as IO线程
     participant Dog as X30机器狗系统
 
     %% Request Flow
@@ -263,13 +290,15 @@ sequenceDiagram
     Impl->>Impl: 保存回调函数 [seqNum, callback]
     Impl->>Proto: sendMessage()
     Proto->>Net: serializeMessage()
-    Net->>Dog: boost::asio::async_write()
+    Net->>IO: 将async_write请求放入io_context队列
     Net->>Impl: return
     Impl->>SDK: return
     SDK->>App: return
+    IO-->>Dog: 执行boost::asio::async_write()
 
     %% Response Flow
-    Dog-->>Net: boost::asio::async_read_some()
+    Dog-->>IO: 返回响应数据
+    IO-->>Net: 执行async_read_some回调
     Net-->>Proto: deserializeMessage(data)
     Proto-->>Impl: onMessageReceived(message)
     Impl-->>Impl: 请求与响应匹配, 找到回调函数 [seqNum, callback]
@@ -308,3 +337,8 @@ X30 机器狗导航 SDK 采用简洁的三层架构设计，各组件职责明�
 - **易用性**：简洁的 API 设计，支持同步和异步操作
 
 通过这种架构设计，SDK 为开发者提供了稳定、可靠、易用的机器狗导航控制功能，同时保持了系统的灵活性和可扩展性。
+
+## 下一步
+
+- 查看 [快速开始](quick_start.md) 了解 SDK 的整体架构和设计理念
+- 查看 [API 参考](api_reference.md) 了解更多 SDK 功能

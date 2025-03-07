@@ -1,17 +1,13 @@
 #include <cstdint>
 #include <navigation_sdk.h>
-#include <types.h>
 #include <iostream>
 #include <thread>
-#include <chrono>
 #include <atomic>
-#include <mutex>
-#include <condition_variable>
 #include <filesystem>
 #include <fstream>
 
-std::vector<nav_sdk::NavigationPoint> loadDefaultNavigationPoints(const std::string& configPath) {
-    std::vector<nav_sdk::NavigationPoint> points;
+std::vector<robotserver_sdk::NavigationPoint> loadDefaultNavigationPoints(const std::string& configPath) {
+    std::vector<robotserver_sdk::NavigationPoint> points;
     try {
         // 检查文件是否存在
         if (!std::filesystem::exists(configPath)) {
@@ -26,7 +22,7 @@ std::vector<nav_sdk::NavigationPoint> loadDefaultNavigationPoints(const std::str
 
         // 解析每个导航点
         for (const auto& jsonPoint : jsonArray) {
-            points.push_back(nav_sdk::NavigationPoint::fromJson(jsonPoint));
+            points.push_back(robotserver_sdk::NavigationPoint::fromJson(jsonPoint));
         }
 
         std::cout << "成功从配置文件加载了 " << points.size() << " 个导航点" << std::endl;
@@ -38,7 +34,7 @@ std::vector<nav_sdk::NavigationPoint> loadDefaultNavigationPoints(const std::str
 }
 
 // 辅助函数：加载默认导航点
-std::vector<nav_sdk::NavigationPoint> loadNavigationPoints() {
+std::vector<robotserver_sdk::NavigationPoint> loadNavigationPoints() {
     // 尝试多个可能的路径
     std::vector<std::filesystem::path> possiblePaths;
 
@@ -47,17 +43,17 @@ std::vector<nav_sdk::NavigationPoint> loadNavigationPoints() {
         std::filesystem::path exePath = std::filesystem::canonical("/proc/self/exe");
         std::filesystem::path exeDir = exePath.parent_path();
 
-        possiblePaths.push_back(exeDir / "default_params.json");                  // 与可执行文件同目录
-        possiblePaths.push_back(exeDir / "basic" / "default_params.json");        // 可执行文件的 basic 子目录
-        possiblePaths.push_back(exeDir.parent_path() / "examples" / "basic" / "default_params.json"); // bin/../examples/basic/
+        possiblePaths.push_back(exeDir / "default_navigation_points.json");                  // 与可执行文件同目录
+        possiblePaths.push_back(exeDir / "basic" / "default_navigation_points.json");        // 可执行文件的 basic 子目录
+        possiblePaths.push_back(exeDir.parent_path() / "examples" / "basic" / "default_navigation_points.json"); // bin/../examples/basic/
 
         // 2. 尝试相对于当前工作目录的路径
         std::filesystem::path currentDir = std::filesystem::current_path();
-        possiblePaths.push_back(currentDir / "default_params.json");
-        possiblePaths.push_back(currentDir / "examples" / "basic" / "default_params.json");
+        possiblePaths.push_back(currentDir / "default_navigation_points.json");
+        possiblePaths.push_back(currentDir / "examples" / "basic" / "default_navigation_points.json");
 
         // 3. 尝试源代码目录的路径（假设在构建目录中运行）
-        possiblePaths.push_back(currentDir.parent_path() / "examples" / "basic" / "default_params.json");
+        possiblePaths.push_back(currentDir.parent_path() / "examples" / "basic" / "default_navigation_points.json");
     }
     catch (const std::exception& e) {
         std::cerr << "获取可执行文件路径时出错: " << e.what() << std::endl;
@@ -67,7 +63,7 @@ std::vector<nav_sdk::NavigationPoint> loadNavigationPoints() {
     for (const auto& path : possiblePaths) {
         std::cout << "尝试加载配置文件: " << path.string() << std::endl;
         if (std::filesystem::exists(path)) {
-            std::vector<nav_sdk::NavigationPoint> points = loadDefaultNavigationPoints(path.string());
+            std::vector<robotserver_sdk::NavigationPoint> points = loadDefaultNavigationPoints(path.string());
             if (!points.empty()) {
                 return points;
             }
@@ -76,16 +72,16 @@ std::vector<nav_sdk::NavigationPoint> loadNavigationPoints() {
 
     // 如果所有路径都失败，尝试使用硬编码的路径
     std::cerr << "无法找到配置文件，尝试使用硬编码路径" << std::endl;
-    return loadDefaultNavigationPoints("./default_params.json");
+    return loadDefaultNavigationPoints("./default_navigation_points.json");
 }
 
-std::vector<nav_sdk::NavigationPoint> g_points = loadNavigationPoints();
+std::vector<robotserver_sdk::NavigationPoint> g_points = loadNavigationPoints();
 
 /**
  * @brief 打印实时状态信息
  * @param status 实时状态信息
  */
-void printStatus(const nav_sdk::RealTimeStatus& status) {
+void printStatus(const robotserver_sdk::RealTimeStatus& status) {
     std::cout << "===== 实时状态信息 =====" << std::endl;
     std::cout << "位置: (" << status.posX << ", " << status.posY << ", " << status.posZ << ")" << std::endl;
     std::cout << "角度: " << status.angleYaw << "°" << std::endl;
@@ -99,19 +95,19 @@ void printStatus(const nav_sdk::RealTimeStatus& status) {
  * @brief 打印任务状态信息
  * @param status 任务状态查询结果
  */
-void printTaskStatus(const nav_sdk::TaskStatusResult& status) {
+void printTaskStatus(const robotserver_sdk::TaskStatusResult& status) {
     std::cout << "===== 任务状态信息 =====" << std::endl;
     std::cout << "目标点编号: " << status.value << std::endl;
     std::cout << "状态: ";
 
     switch (status.status) {
-        case nav_sdk::Status_QueryStatus::COMPLETED:
+        case robotserver_sdk::Status_QueryStatus::COMPLETED:
             std::cout << "已完成" << std::endl;
             break;
-        case nav_sdk::Status_QueryStatus::EXECUTING:
+        case robotserver_sdk::Status_QueryStatus::EXECUTING:
             std::cout << "执行中" << std::endl;
             break;
-        case nav_sdk::Status_QueryStatus::FAILED:
+        case robotserver_sdk::Status_QueryStatus::FAILED:
             std::cout << "失败" << std::endl;
             break;
     }
@@ -125,7 +121,7 @@ void printTaskStatus(const nav_sdk::TaskStatusResult& status) {
  * @brief 打印导航结果
  * @param result 导航任务结果
  */
-void printNavigationResult(const nav_sdk::NavigationResult& result) {
+void printNavigationResult(const robotserver_sdk::NavigationResult& result) {
     std::cout << "===== 导航任务结果 =====" << std::endl;
     std::cout << "目标点编号: " << result.value << std::endl;
     std::cout << "错误码: " << static_cast<int>(result.errorCode) << std::endl;
@@ -144,17 +140,17 @@ int main(int argc, char* argv[]) {
     std::string host = argv[1];
     uint16_t port = static_cast<uint16_t>(std::stoi(argv[2]));
 
-    std::cout << "X30 机器狗导航 SDK 示例程序" << std::endl;
-    std::cout << "SDK 版本: " << nav_sdk::NavigationSdk::getVersion() << std::endl;
+    std::cout << "X30 机器狗 RobotServer SDK 导航示例程序" << std::endl;
+    std::cout << "SDK 版本: " << robotserver_sdk::RobotServerSdk::getVersion() << std::endl;
     std::cout << "连接到: " << host << ":" << port << std::endl;
 
     try {
         // 创建 SDK 实例
-        nav_sdk::SdkOptions options;
+        robotserver_sdk::SdkOptions options;
         options.connectionTimeout = std::chrono::milliseconds(5000);
         options.requestTimeout = std::chrono::milliseconds(3000);
 
-        nav_sdk::NavigationSdk sdk(options);
+        robotserver_sdk::RobotServerSdk sdk(options);
 
         // 连接到机器狗控制系统
         if (!sdk.connect(host, port)) {
@@ -165,19 +161,19 @@ int main(int argc, char* argv[]) {
         std::cout << "连接成功!" << std::endl;
 
         // 获取初始实时状态
-        nav_sdk::RealTimeStatus status = sdk.request1002_RunTimeStatus();
+        robotserver_sdk::RealTimeStatus status = sdk.request1002_RunTimeStatus();
         std::cout << "request1002_RunTimeStatus complete" << std::endl;
         printStatus(status);
 
         // 创建导航点
-        std::vector<nav_sdk::NavigationPoint> points = g_points;
+        std::vector<robotserver_sdk::NavigationPoint> points = g_points;
 
         // 标记是否收到导航响应
         std::atomic<bool> navigationResponseReceived{false};
 
         // 异步发送导航任务（使用回调形式）
         std::cout << "开始导航任务..." << std::endl;
-        sdk.request1003_StartNavTask(points, [&](const nav_sdk::NavigationResult& result) {
+        sdk.request1003_StartNavTask(points, [&](const robotserver_sdk::NavigationResult& result) {
             // 打印导航任务结果
             printNavigationResult(result);
 

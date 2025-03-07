@@ -1,8 +1,6 @@
 #pragma once
 
 #include "message_interface.hpp"
-#include "messages.hpp"
-#include "protocol_header.hpp"
 #include <memory>
 #include <string>
 #include <map>
@@ -10,7 +8,7 @@
 namespace protocol {
 
 /**
- * @brief X30协议处理类
+ * @brief 协议序列化类
  */
 class Serializer {
 public:
@@ -68,11 +66,11 @@ private:
     MessageType determineMessageType(int type);
 
     // Type值到消息类型的映射
-    const std::map<int, std::pair<MessageType, MessageType>> type_to_message_type_ = {
-        {1002, {MessageType::GET_REAL_TIME_STATUS_REQ, MessageType::GET_REAL_TIME_STATUS_RESP}},
-        {1003, {MessageType::NAVIGATION_TASK_REQ, MessageType::NAVIGATION_TASK_RESP}},
-        {1004, {MessageType::CANCEL_TASK_REQ, MessageType::CANCEL_TASK_RESP}},
-        {1007, {MessageType::QUERY_STATUS_REQ, MessageType::QUERY_STATUS_RESP}}
+    const std::map<int, MessageType> type_to_message_type_ = {
+        {1002, MessageType::GET_REAL_TIME_STATUS_RESP},
+        {1003, MessageType::NAVIGATION_TASK_RESP},
+        {1004, MessageType::CANCEL_TASK_RESP},
+        {1007, MessageType::QUERY_STATUS_RESP}
     };
 };
 

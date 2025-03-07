@@ -1,6 +1,5 @@
 #include "protocol_header.hpp"
 #include <algorithm>
-#include <mutex>
 
 namespace {
 constexpr uint8_t HEADER_1 = 0xeb;
@@ -21,19 +20,6 @@ void toLittleEndian(char* buf, size_t size) {
         }
     }
 }
-
-// // 加锁保护，全局消息ID计数器
-// std::mutex g_message_id_mutex;
-// // 全局消息ID计数器
-// static uint16_t g_message_id_counter = 0;
-
-// // 获取新的消息ID
-// uint16_t generateMessageId() {
-//     std::lock_guard<std::mutex> lock(g_message_id_mutex);
-//     // 从0开始递增，达到65535后重新从0开始
-//     g_message_id_counter = (g_message_id_counter + 1) % 65536;
-//     return g_message_id_counter;
-// }
 }  // namespace
 
 namespace protocol {

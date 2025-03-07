@@ -1,7 +1,6 @@
 #pragma once
 
 #include <string>
-#include <memory>
 #include "protocol/message_interface.hpp"
 
 namespace network {

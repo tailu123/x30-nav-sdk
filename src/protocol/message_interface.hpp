@@ -21,7 +21,7 @@ enum class MessageType {
 };
 
 /**
- * @brief 下发导航任务响应错误码枚举
+ * @brief 1003 下发导航任务响应错误码枚举
  */
 enum class ErrorCode_Navigation {
     SUCCESS = 0,
@@ -30,7 +30,7 @@ enum class ErrorCode_Navigation {
 };
 
 /**
- * @brief 取消任务响应错误码枚举
+ * @brief 1004 取消任务响应错误码枚举
  */
 enum class ErrorCode_CancelTask {
     SUCCESS = 0,
@@ -38,7 +38,7 @@ enum class ErrorCode_CancelTask {
 };
 
 /**
- * @brief 查询任务状态响应错误码枚举
+ * @brief 1007 查询任务状态响应错误码枚举
  */
 enum class ErrorCode_QueryStatus {
     COMPLETED = 0,

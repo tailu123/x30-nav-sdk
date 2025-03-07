@@ -6,10 +6,10 @@
 #include <chrono>
 #include <memory>
 #include <nlohmann/json.hpp>
-namespace nav_sdk {
+namespace robotserver_sdk {
 
 /**
- * @brief 导航任务响应ErrorCode枚举
+ * @brief 1003 导航任务响应ErrorCode枚举
  */
 enum class ErrorCode_Navigation {
     SUCCESS = 0,      ///< 操作成功
@@ -17,11 +17,12 @@ enum class ErrorCode_Navigation {
     CANCELLED = 2,    ///< 操作被取消
 
     INVALID_PARAM = 3,///< 无效参数
-    NOT_CONNECTED = 4 ///< 未连接
+    NOT_CONNECTED = 4,///< 未连接
+    UNKNOWN_ERROR = 5 ///< 未知错误
 };
 
 /**
- * @brief 导航任务响应ErrorStatus枚举
+ * @brief 1003 导航任务响应ErrorStatus枚举
  */
 enum class ErrorStatus_Navigation {
     DEFAULT = 0,                                                                 ///< 默认值
@@ -66,7 +67,7 @@ enum class ErrorStatus_Navigation {
 };
 
 /**
- * @brief 任务状态查询错误码枚举
+ * @brief 1007 任务状态查询错误码枚举
  */
 enum class ErrorCode_QueryStatus {
     COMPLETED = 0,          ///< 任务已完成
@@ -80,7 +81,7 @@ enum class ErrorCode_QueryStatus {
 };
 
 /**
- * @brief 任务状态查询status 枚举
+ * @brief 1007 任务状态查询status 枚举
  */
 enum class Status_QueryStatus {
     COMPLETED = 0,    ///< 任务已完成
@@ -89,7 +90,7 @@ enum class Status_QueryStatus {
 };
 
 /**
- * @brief 实时状态查询错误码枚举
+ * @brief 1002 实时状态查询错误码枚举
  */
 enum class ErrorCode_RealTimeStatus {
     SUCCESS = 0,            ///< 操作成功
@@ -98,14 +99,6 @@ enum class ErrorCode_RealTimeStatus {
     TIMEOUT = 2,            ///< 超时
     NOT_CONNECTED = 3,      ///< 未连接
     UNKNOWN_ERROR = 4       ///< 未知错误
-};
-
-/**
- * @brief 事件类型枚举
- */
-enum class EventType {
-    CONNECTED,           ///< 已连接
-    DISCONNECTED,        ///< 已断开连接
 };
 
 /**
@@ -147,10 +140,8 @@ struct NavigationPoint {
     }
 };
 
-
-#pragma pack(push, 1)
 /**
- * @brief 实时状态信息
+ * @brief 1002 实时状态信息
  */
 struct RealTimeStatus {
     int motionState = 0;                ///< 运动状态
@@ -182,9 +173,8 @@ struct RealTimeStatus {
 
     ErrorCode_RealTimeStatus errorCode = ErrorCode_RealTimeStatus::SUCCESS; ///< 错误码
 };
-#pragma pack(pop)
 /**
- * @brief 导航任务结果
+ * @brief 1003 导航任务结果
  */
 struct NavigationResult {
     int value = 0;                                                  ///< 导航任务目标点编号，与下发导航任务请求对应
@@ -193,7 +183,7 @@ struct NavigationResult {
 };
 
 /**
- * @brief 任务状态查询结果
+ * @brief 1007 任务状态查询结果
  */
 struct TaskStatusResult {
     int value = 0;                                                      ///< 导航任务目标点编号，与下发导航任务请求对应
@@ -214,4 +204,4 @@ struct SdkOptions {
  */
 using NavigationResultCallback = std::function<void(const NavigationResult&)>;
 
-} // namespace nav_sdk
+} // namespace robotserver_sdk

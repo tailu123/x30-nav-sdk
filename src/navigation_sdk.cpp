@@ -1,27 +1,49 @@
 #include <navigation_sdk.h>
 #include <chrono>
-#include <thread>
 #include <mutex>
 #include <condition_variable>
-#include <queue>
 #include <atomic>
 #include <iostream>
 #include <sstream>
 #include <iomanip>
 #include <ctime>
-#include <future>
 
-// 包含网络和协议相关头文件
 #include "network/asio_network_model.hpp"
-// #include "network/message_queue.hpp"
-#include "protocol/serializer.hpp"
+#include "protocol/messages.hpp"
 
-
-// using namespace network;
-namespace nav_sdk {
+namespace robotserver_sdk {
 
 // SDK版本
 static const std::string SDK_VERSION = "0.1.0";
+
+/**
+ * @brief 作用域保护类
+ * @tparam F 函数类型
+ */
+template <typename F>
+class ScopeGuard {
+    F f_;
+public:
+    ScopeGuard(F f) : f_(std::move(f)) {}
+    ~ScopeGuard() { f_(); }
+    
+    // 禁止复制和移动
+    ScopeGuard(const ScopeGuard&) = delete;
+    ScopeGuard& operator=(const ScopeGuard&) = delete;
+    ScopeGuard(ScopeGuard&&) = delete;
+    ScopeGuard& operator=(ScopeGuard&&) = delete;
+};
+
+/**
+ * @brief 创建作用域保护类
+ * @tparam F 函数类型
+ * @param f 函数对象
+ * @return 作用域保护类
+ */
+template <typename F>
+ScopeGuard<F> makeScopeGuard(F f) {
+    return ScopeGuard<F>(std::move(f));
+}
 
 /**
  * @brief 安全回调包装函数，用于捕获和处理用户回调函数中可能抛出的异常
@@ -56,7 +78,6 @@ void safeCallback(const Callback& callback, const std::string& callbackType, Arg
     }
 }
 
-// protocol::GetRealTimeStatusResponse -> RealTimeStatus
 RealTimeStatus convertToRealTimeStatus(const protocol::GetRealTimeStatusResponse& realTimeResp) {
     RealTimeStatus status;
     status.motionState = realTimeResp.motionState;
@@ -90,47 +111,59 @@ RealTimeStatus convertToRealTimeStatus(const protocol::GetRealTimeStatusResponse
 }
 
 // SDK实现类
-class NavigationSdkImpl : public ::network::INetworkCallback {
+class RobotServerSdkImpl : public network::INetworkCallback {
 public:
-    NavigationSdkImpl(const SdkOptions& options)
+    RobotServerSdkImpl(const SdkOptions& options)
         : options_(options),
-          connected_(false),
-          network_model_(std::make_unique<::network::AsioNetworkModel>(*this)) {
+          network_model_(std::make_unique<network::AsioNetworkModel>(*this)) {
         // 设置网络模型的连接超时时间
         network_model_->setConnectionTimeout(options_.connectionTimeout);
     }
 
-    ~NavigationSdkImpl() {
+    ~RobotServerSdkImpl() {
         disconnect();
     }
 
     bool connect(const std::string& host, uint16_t port) {
-        if (connected_) {
-            return true;
+        try {
+            if (isConnected()) {
+                return true;
+            }
+
+            return network_model_->connect(host, port);
+        } catch (const std::exception& e) {
+            std::cerr << "connect 异常: " << e.what() << std::endl;
+            return false;
+        } catch (...) {
+            std::cerr << "connect 未知异常" << std::endl;
+            return false;
         }
-
-        if (network_model_->connect(host, port)) {
-            connected_ = true;
-
-            return true;
-        }
-
-        return false;
     }
-
     void disconnect() {
-        if (!connected_) {
-            return;
-        }
+        try {
+            if (!isConnected()) {
+                return;
+            }
 
-        network_model_->disconnect();
-        connected_ = false;
+            network_model_->disconnect();
+        } catch (const std::exception& e) {
+            std::cerr << "disconnect 异常: " << e.what() << std::endl;
+        } catch (...) {
+            std::cerr << "disconnect 未知异常" << std::endl;
+        }
     }
 
     bool isConnected() const {
-        return connected_ && network_model_->isConnected();
+        try {
+            return network_model_->isConnected();
+        } catch (const std::exception& e) {
+            std::cerr << "isConnected 异常: " << e.what() << std::endl;
+            return false;
+        } catch (...) {
+            std::cerr << "isConnected 未知异常" << std::endl;
+            return false;
+        }
     }
-
 
     RealTimeStatus request1002_RunTimeStatus() {
         try {
@@ -151,12 +184,16 @@ public:
             // 添加到待处理请求，标记为同步请求
             addPendingRequest(seqNum, protocol::MessageType::GET_REAL_TIME_STATUS_RESP);
 
+            // 创建ScopeGuard，在函数结束时自动移除请求
+            auto guard = makeScopeGuard([this, seqNum]() {
+                removePendingRequest(seqNum);
+            });
+
             // 发送请求
             network_model_->sendMessage(request);
 
             // 等待响应
             std::unique_ptr<protocol::GetRealTimeStatusResponse> realTimeResp;
-            bool responseReceived = false;
             {
                 std::unique_lock<std::mutex> lock(pending_requests_mutex_);
                 auto& pendingReq = pendingRequests_[seqNum];
@@ -166,25 +203,17 @@ public:
                         [&pendingReq]() { return pendingReq.responseReceived; });
                 }
 
-                if (pendingReq.responseReceived && pendingReq.response) {
-                    responseReceived = true;
-                    // 正确处理指针转换和所有权转移
-                    auto* castedPtr = dynamic_cast<protocol::GetRealTimeStatusResponse*>(pendingReq.response.get());
-                    if (castedPtr) {
-                        // 创建新的 unique_ptr 并释放原始 response 的所有权
-                        realTimeResp = std::unique_ptr<protocol::GetRealTimeStatusResponse>(castedPtr);
-                        pendingReq.response.release();  // 释放所有权但不删除对象
-                    }
+                if (!pendingReq.responseReceived) {
+                    RealTimeStatus status;
+                    status.errorCode = ErrorCode_RealTimeStatus::TIMEOUT;
+                    return status;
                 }
 
-                // 移除请求
-                pendingRequests_.erase(seqNum);
-            }
-
-            if (!responseReceived) {
-                RealTimeStatus status;
-                status.errorCode = ErrorCode_RealTimeStatus::TIMEOUT;
-                return status;
+                auto* castedPtr = dynamic_cast<protocol::GetRealTimeStatusResponse*>(pendingReq.response.get());
+                if (castedPtr) {
+                    realTimeResp = std::unique_ptr<protocol::GetRealTimeStatusResponse>(castedPtr);
+                    pendingReq.response.release();  // 释放所有权但不删除对象
+                }
             }
 
             if (!realTimeResp) {
@@ -194,9 +223,7 @@ public:
             }
 
             // 转换为SDK的RealTimeStatus
-            RealTimeStatus status = convertToRealTimeStatus(*realTimeResp);
-
-            return status;
+            return convertToRealTimeStatus(*realTimeResp);
 
         } catch (const std::exception& e) {
             std::cerr << "request1002_RunTimeStatus 异常: " << e.what() << std::endl;
@@ -213,56 +240,68 @@ public:
 
     // 添加基于回调的异步方法实现
     void request1003_StartNavTask(const std::vector<NavigationPoint>& points, NavigationResultCallback callback) {
-        if (!callback || points.empty()) {
+        try {
+            if (!callback || points.empty()) {
+                NavigationResult failResult;
+                failResult.errorCode = ErrorCode_Navigation::INVALID_PARAM;
+                safeCallback(callback, "导航结果", failResult);
+                return;
+            }
+
+            if (!isConnected()) {
+                NavigationResult failResult;
+                failResult.errorCode = ErrorCode_Navigation::NOT_CONNECTED;
+                safeCallback(callback, "导航结果", failResult);
+                return;
+            }
+
+            // 创建请求消息
+            protocol::NavigationTaskRequest request;
+            request.timestamp = getCurrentTimestamp();
+
+            // 生成并设置序列号
+            uint16_t seqNum = generateSequenceNumber();
+            request.setSequenceNumber(seqNum);
+
+            // 转换导航点
+            for (const auto& point : points) {
+                protocol::NavigationPoint proto_point;
+                proto_point.mapId = point.mapId;
+                proto_point.value = point.value;
+                proto_point.posX = point.posX;
+                proto_point.posY = point.posY;
+                proto_point.posZ = point.posZ;
+                proto_point.angleYaw = point.angleYaw;
+                proto_point.pointInfo = point.pointInfo;
+                proto_point.gait = point.gait;
+                proto_point.speed = point.speed;
+                proto_point.manner = point.manner;
+                proto_point.obsMode = point.obsMode;
+                proto_point.navMode = point.navMode;
+                proto_point.terrain = point.terrain;
+                proto_point.posture = point.posture;
+                request.points.push_back(proto_point);
+            }
+
+            // 保存回调函数
+            {
+                std::lock_guard<std::mutex> lock(navigation_result_callbacks_mutex_);
+                navigation_result_callbacks_[seqNum] = std::move(callback);
+            }
+
+            // 发送请求
+            network_model_->sendMessage(request);
+        } catch (const std::exception& e) {
+            std::cerr << "request1003_StartNavTask 异常: " << e.what() << std::endl;
             NavigationResult failResult;
-            failResult.errorCode = ErrorCode_Navigation::INVALID_PARAM;
+            failResult.errorCode = ErrorCode_Navigation::UNKNOWN_ERROR;
             safeCallback(callback, "导航结果", failResult);
-            return;
-        }
-
-        if (!isConnected()) {
+        } catch (...) {
+            std::cerr << "request1003_StartNavTask 未知异常" << std::endl;
             NavigationResult failResult;
-            failResult.errorCode = ErrorCode_Navigation::NOT_CONNECTED;
+            failResult.errorCode = ErrorCode_Navigation::UNKNOWN_ERROR;
             safeCallback(callback, "导航结果", failResult);
-            return;
         }
-
-        // 创建请求消息
-        protocol::NavigationTaskRequest request;
-        request.timestamp = getCurrentTimestamp();
-
-        // 生成并设置序列号
-        uint16_t seqNum = generateSequenceNumber();
-        request.setSequenceNumber(seqNum);
-
-        // 转换导航点
-        for (const auto& point : points) {
-            protocol::NavigationPoint proto_point;
-            proto_point.mapId = point.mapId;
-            proto_point.value = point.value;
-            proto_point.posX = point.posX;
-            proto_point.posY = point.posY;
-            proto_point.posZ = point.posZ;
-            proto_point.angleYaw = point.angleYaw;
-            proto_point.pointInfo = point.pointInfo;
-            proto_point.gait = point.gait;
-            proto_point.speed = point.speed;
-            proto_point.manner = point.manner;
-            proto_point.obsMode = point.obsMode;
-            proto_point.navMode = point.navMode;
-            proto_point.terrain = point.terrain;
-            proto_point.posture = point.posture;
-            request.points.push_back(proto_point);
-        }
-
-        // 保存回调函数
-        {
-            std::lock_guard<std::mutex> lock(navigation_result_callbacks_mutex_);
-            navigation_result_callbacks_[seqNum] = std::move(callback);
-        }
-
-        // 发送请求
-        network_model_->sendMessage(request);
     }
 
     bool request1004_CancelNavTask() {
@@ -282,6 +321,11 @@ public:
             // 添加到待处理请求，标记为同步请求
             addPendingRequest(seqNum, protocol::MessageType::CANCEL_TASK_RESP);
 
+            // 创建ScopeGuard，在函数结束时自动移除请求
+            auto guard = makeScopeGuard([this, seqNum]() {
+                removePendingRequest(seqNum);
+            });
+
             // 发送请求
             network_model_->sendMessage(request);
 
@@ -296,16 +340,15 @@ public:
                         [&pendingReq]() { return pendingReq.responseReceived; });
                 }
 
-                if (pendingReq.responseReceived && pendingReq.response) {
-                    // 正确处理指针转换和所有权转移
-                    auto* castedPtr = dynamic_cast<protocol::CancelTaskResponse*>(pendingReq.response.get());
-                    if (castedPtr) {
-                        cancelResp = std::unique_ptr<protocol::CancelTaskResponse>(castedPtr);
-                        pendingReq.response.release();  // 释放所有权但不删除对象
-                    }
+                if (!pendingReq.responseReceived) {
+                    return false;
                 }
 
-                pendingRequests_.erase(seqNum);
+                auto* castedPtr = dynamic_cast<protocol::CancelTaskResponse*>(pendingReq.response.get());
+                if (castedPtr) {
+                    cancelResp = std::unique_ptr<protocol::CancelTaskResponse>(castedPtr);
+                    pendingReq.response.release();  // 释放所有权但不删除对象
+                }
             }
 
             return cancelResp && cancelResp->errorCode == protocol::ErrorCode_CancelTask::SUCCESS;
@@ -338,12 +381,16 @@ public:
             // 添加到待处理请求，标记为同步请求
             addPendingRequest(seqNum, protocol::MessageType::QUERY_STATUS_RESP);
 
+            // 创建ScopeGuard，在函数结束时自动移除请求
+            auto guard = makeScopeGuard([this, seqNum]() {
+                removePendingRequest(seqNum);
+            });
+
             // 发送请求
             network_model_->sendMessage(request);
 
             // 等待响应
             std::unique_ptr<protocol::QueryStatusResponse> statusResp;
-            bool responseReceived = false;
             {
                 std::unique_lock<std::mutex> lock(pending_requests_mutex_);
                 auto& pendingReq = pendingRequests_[seqNum];
@@ -353,23 +400,17 @@ public:
                         [&pendingReq]() { return pendingReq.responseReceived; });
                 }
 
-                if (pendingReq.responseReceived && pendingReq.response) {
-                    responseReceived = true;
-                    // 正确处理指针转换和所有权转移
-                    auto* castedPtr = dynamic_cast<protocol::QueryStatusResponse*>(pendingReq.response.get());
-                    if (castedPtr) {
-                        statusResp = std::unique_ptr<protocol::QueryStatusResponse>(castedPtr);
-                        pendingReq.response.release();  // 释放所有权但不删除对象
-                    }
+                if (!pendingReq.responseReceived) {
+                    TaskStatusResult result;
+                    result.errorCode = ErrorCode_QueryStatus::TIMEOUT;
+                    return result;
                 }
 
-                pendingRequests_.erase(seqNum);
-            }
-
-            if (!responseReceived) {
-                TaskStatusResult result;
-                result.errorCode = ErrorCode_QueryStatus::TIMEOUT;
-                return result;
+                auto* castedPtr = dynamic_cast<protocol::QueryStatusResponse*>(pendingReq.response.get());
+                if (castedPtr) {
+                    statusResp = std::unique_ptr<protocol::QueryStatusResponse>(castedPtr);
+                    pendingReq.response.release();  // 释放所有权但不删除对象
+                }
             }
 
             if (!statusResp) {
@@ -401,53 +442,58 @@ public:
 
     // 实现网络回调接口
     void onMessageReceived(std::unique_ptr<protocol::IMessage> message) override {
-        if (!message) {
-            return;
-        }
+        try {
+            if (!message) {
+                return;
+            }
 
-        uint16_t seqNum = message->getSequenceNumber();
-        protocol::MessageType msgType = message->getType();
+            uint16_t seqNum = message->getSequenceNumber();
+            protocol::MessageType msgType = message->getType();
 
-        if (msgType == protocol::MessageType::NAVIGATION_TASK_RESP) {
+            if (msgType == protocol::MessageType::NAVIGATION_TASK_RESP) {
 
-            NavigationResultCallback callback;
-            NavigationResult result;
-            // 检查是否有等待此响应的请求
-            {
-                std::lock_guard<std::mutex> lock(navigation_result_callbacks_mutex_);
-                auto it = navigation_result_callbacks_.find(seqNum);
-                if (it != navigation_result_callbacks_.end()) {
-                    callback = it->second;
-                    navigation_result_callbacks_.erase(it);
+                NavigationResultCallback callback;
+                // 检查是否有等待此响应的请求
+                {
+                    std::lock_guard<std::mutex> lock(navigation_result_callbacks_mutex_);
+                    auto it = navigation_result_callbacks_.find(seqNum);
+                    if (it != navigation_result_callbacks_.end()) {
+                        callback = it->second;
+                        navigation_result_callbacks_.erase(it);
+                    }
                 }
+
+                // 如果有回调，则使用安全回调包装函数调用
+                if (callback) {
+                    auto* resp = dynamic_cast<protocol::NavigationTaskResponse*>(message.get());
+                    if (resp) {
+                        NavigationResult result;
+                        result.value = resp->value;
+                        result.errorCode = static_cast<ErrorCode_Navigation>(resp->errorCode);
+                        result.errorStatus = static_cast<ErrorStatus_Navigation>(resp->errorStatus);
+                        safeCallback(callback, "导航结果", result);
+                    }
+                }
+
+                return;
             }
 
-            // 如果有回调，则使用安全回调包装函数调用
-            if (callback) {
-                auto resp = static_cast<protocol::NavigationTaskResponse*>(message.get());
-                result.value = resp->value;
-                result.errorCode = static_cast<ErrorCode_Navigation>(resp->errorCode);
-                result.errorStatus = static_cast<ErrorStatus_Navigation>(resp->errorStatus);
-                safeCallback(callback, "导航结果", result);
+            // 处理其他类型的响应消息
+            std::lock_guard<std::mutex> lock(pending_requests_mutex_);
+            auto it = pendingRequests_.find(seqNum);
+            if (it != pendingRequests_.end() && it->second.expectedResponseType == msgType) {
+                it->second.response = std::move(message);
+                it->second.responseReceived = true;
+                it->second.cv->notify_one();
             }
-
-            return;
-        }
-
-        // 处理其他类型的响应消息
-        std::lock_guard<std::mutex> lock(pending_requests_mutex_);
-        auto it = pendingRequests_.find(seqNum);
-        if (it != pendingRequests_.end() && it->second.expectedResponseType == msgType) {
-            it->second.response = std::move(message);
-            it->second.responseReceived = true;
-            it->second.cv->notify_one();
+        } catch (const std::exception& e) {
+            std::cerr << "onMessageReceived 异常: " << e.what() << std::endl;
+        } catch (...) {
+            std::cerr << "onMessageReceived 未知异常" << std::endl;
         }
     }
 
 private:
-    bool isRequestPending(uint16_t sequenceNumber) {
-        return pendingRequests_.find(sequenceNumber) != pendingRequests_.end();
-    }
 
     void addPendingRequest(uint16_t sequenceNumber, protocol::MessageType expectedType) {
         std::lock_guard<std::mutex> lock(pending_requests_mutex_);
@@ -473,8 +519,7 @@ private:
     }
 
     SdkOptions options_;
-    std::atomic<bool> connected_;
-    std::unique_ptr<::network::AsioNetworkModel> network_model_;
+    std::unique_ptr<network::AsioNetworkModel> network_model_;
 
     // 生成序列号， 从0到65535后溢出回到0
     uint16_t generateSequenceNumber() {
@@ -497,44 +542,44 @@ private:
     std::map<uint16_t, NavigationResultCallback> navigation_result_callbacks_;
 };
 
-// NavigationSdk类的实现
-NavigationSdk::NavigationSdk(const SdkOptions& options)
-    : impl_(std::make_unique<NavigationSdkImpl>(options)) {
+// RobotServerSdk类的实现
+RobotServerSdk::RobotServerSdk(const SdkOptions& options)
+    : impl_(std::make_unique<RobotServerSdkImpl>(options)) {
 }
 
-NavigationSdk::~NavigationSdk() = default;
+RobotServerSdk::~RobotServerSdk() = default;
 
-bool NavigationSdk::connect(const std::string& host, uint16_t port) {
+bool RobotServerSdk::connect(const std::string& host, uint16_t port) {
     return impl_->connect(host, port);
 }
 
-void NavigationSdk::disconnect() {
+void RobotServerSdk::disconnect() {
     impl_->disconnect();
 }
 
-bool NavigationSdk::isConnected() const {
+bool RobotServerSdk::isConnected() const {
     return impl_->isConnected();
 }
 
-RealTimeStatus NavigationSdk::request1002_RunTimeStatus() {
+RealTimeStatus RobotServerSdk::request1002_RunTimeStatus() {
     return impl_->request1002_RunTimeStatus();
 }
 
 // 添加基于回调的异步方法实现
-void NavigationSdk::request1003_StartNavTask(const std::vector<NavigationPoint>& points, NavigationResultCallback callback) {
+void RobotServerSdk::request1003_StartNavTask(const std::vector<NavigationPoint>& points, NavigationResultCallback callback) {
     impl_->request1003_StartNavTask(points, std::move(callback));
 }
 
-bool NavigationSdk::request1004_CancelNavTask() {
+bool RobotServerSdk::request1004_CancelNavTask() {
     return impl_->request1004_CancelNavTask();
 }
 
-TaskStatusResult NavigationSdk::request1007_NavTaskStatus() {
+TaskStatusResult RobotServerSdk::request1007_NavTaskStatus() {
     return impl_->request1007_NavTaskStatus();
 }
 
-std::string NavigationSdk::getVersion() {
+std::string RobotServerSdk::getVersion() {
     return SDK_VERSION;
 }
 
-} // namespace nav_sdk
+} // namespace robotserver_sdk

@@ -1,8 +1,8 @@
 #include "serializer.hpp"
 #include <nlohmann/json.hpp>
 #include <rapidxml/rapidxml.hpp>
-#include <sstream>
 #include <iostream>
+#include "protocol_header.hpp"
 
 namespace protocol {
 
@@ -161,7 +161,7 @@ MessageType Serializer::determineMessageType(int type) {
         return MessageType::UNKNOWN;
     }
 
-    return it->second.second;
+    return it->second;
 }
 
 } // namespace protocol

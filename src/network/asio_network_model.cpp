@@ -23,6 +23,7 @@ void AsioNetworkModel::setConnectionTimeout(std::chrono::milliseconds timeout) {
 }
 
 bool AsioNetworkModel::connect(const std::string& host, uint16_t port) {
+    // 如果已经连接，直接返回成功
     if (connected_) {
         return true;
     }
@@ -31,6 +32,7 @@ bool AsioNetworkModel::connect(const std::string& host, uint16_t port) {
         // 重置io_context，确保它处于干净状态
         io_context_.restart();
 
+        // 解析主机地址
         boost::asio::ip::tcp::resolver resolver(io_context_);
         auto endpoints = resolver.resolve(host, std::to_string(port));
 
@@ -84,6 +86,9 @@ bool AsioNetworkModel::connect(const std::string& host, uint16_t port) {
         return true;
     } catch (const std::exception& e) {
         std::cerr << "连接异常: " << e.what() << std::endl;
+        return false;
+    } catch (...) {
+        std::cerr << "连接异常: 未知异常" << std::endl;
         return false;
     }
 }
