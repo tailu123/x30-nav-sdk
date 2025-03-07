@@ -89,9 +89,9 @@ Refer to the `examples/basic/basic_example.cpp` file, which implements a simple 
 
 ## Documentation
 
-1. [Quick Start Guide](docs/zh-CN/quick_start.zh-CN.md) - Quickly get started with the basic functions of the SDK
-2. [SDK Architecture Overview](docs/zh-CN/architecture.zh-CN.md) - Overall architecture and design philosophy of the SDK
-3. [API Reference](docs/zh-CN/api_reference.zh-CN.md) - Detailed API usage instructions and examples
+1. [Quick Start Guide](docs/en/quick_start.en.md) - Quickly get started with the basic functions of the SDK
+2. [SDK Architecture Overview](docs/en/architecture.en.md) - Overall architecture and design philosophy of the SDK
+3. [API Reference](docs/en/api_reference.en.md) - Detailed API usage instructions and examples
 
 ## Technical Features
 

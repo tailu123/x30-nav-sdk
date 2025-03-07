@@ -43,6 +43,19 @@ make
 sudo make install / sudo make uninstall
 ```
 
+4. Build the documentation
+
+```bash
+# Install dependencies
+sudo apt-get install doxygen
+pip install sphinx sphinx_rtd_theme breathe sphinx-intl
+# Build the documentation
+chmod +x docs/build_docs.sh
+./docs/build_docs.sh
+# Open the browser to view the documentation
+xdg-open ./docs/sphinx/build/index.html
+```
+
 ## Basic Usage
 
 ### Complete Example

@@ -43,6 +43,19 @@ make
 sudo make install / sudo make uninstall
 ```
 
+4. 构建文档
+
+```bash
+# 安装依赖
+sudo apt-get install doxygen
+pip install sphinx sphinx_rtd_theme breathe sphinx-intl
+# 构建文档
+chmod +x docs/build_docs.sh
+./docs/build_docs.sh
+# 打开浏览器查看文档
+xdg-open ./docs/sphinx/build/index.html
+```
+
 ## 基本用法
 
 ### 完整示例

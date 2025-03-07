@@ -89,9 +89,9 @@ sudo make install / sudo make uninstall (optional)
 
 ## 文檔目錄
 
-1. [快速入門指南](docs/zh-CN/quick_start.zh-CN.md) - 快速上手使用 SDK 的基本功能
-2. [SDK 架構概述](docs/zh-CN/architecture.zh-CN.md) - SDK 的整體架構和設計理念
-3. [API 參考](docs/zh-CN/api_reference.zh-CN.md) - 詳細的 API 使用說明和示例
+1. [快速入門指南](docs/zh-TW/quick_start.zh-TW.md) - 快速上手使用 SDK 的基本功能
+2. [SDK 架構概述](docs/zh-TW/architecture.zh-TW.md) - SDK 的整體架構和設計理念
+3. [API 參考](docs/zh-TW/api_reference.zh-TW.md) - 詳細的 API 使用說明和示例
 
 ## 技術特點
 
