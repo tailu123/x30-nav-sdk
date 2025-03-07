@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(x30_nav_sdk VERSION 0.1.0 LANGUAGES CXX)
+project(robotserver_sdk VERSION 0.1.0 LANGUAGES CXX)
 
 # 设置C++标准
 set(CMAKE_CXX_STANDARD 17)
@@ -48,7 +48,7 @@ add_library(${PROJECT_NAME} SHARED ${SDK_SOURCES})
 set_target_properties(${PROJECT_NAME} PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION ${PROJECT_VERSION_MAJOR}
-    PUBLIC_HEADER "include/navigation_sdk.h;include/types.h"
+    PUBLIC_HEADER "include/robotserver_sdk.h;include/types.h"
 )
 
 # 链接依赖库
@@ -109,7 +109,7 @@ endif()
 
 # 输出配置信息
 message(STATUS "")
-message(STATUS "X30 Navigation SDK Configuration:")
+message(STATUS "RobotServer SDK Configuration:")
 message(STATUS "  Version:           ${PROJECT_VERSION}")
 message(STATUS "  Build type:        ${CMAKE_BUILD_TYPE}")
 message(STATUS "  Install prefix:    ${CMAKE_INSTALL_PREFIX}")

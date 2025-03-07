@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.10)
 
 # 基本示例
 add_executable(basic_example basic_example.cpp)
-target_link_libraries(basic_example PRIVATE x30_nav_sdk Threads::Threads)
+target_link_libraries(basic_example PRIVATE robotserver_sdk Threads::Threads)
 
 # 复制配置文件到构建目录
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/default_navigation_points.json

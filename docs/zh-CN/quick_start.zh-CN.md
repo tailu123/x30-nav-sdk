@@ -1,6 +1,6 @@
 # 快速入门指南
 
-本指南将帮助您快速上手使用 X30 机器狗RobotServer SDK，即使您不熟悉 C++ 编程语言。
+本指南将帮助您快速上手使用机器狗 RobotServer SDK，即使您不熟悉 C++ 编程语言。
 
 ## 系统要求
 
@@ -25,8 +25,8 @@ chmod +x scripts/install_dependencies.sh
 1. 克隆 SDK 代码库：
 
 ```bash
-git clone https://github.com/tailu123/x30-nav-sdk.git
-cd x30_nav_sdk
+git clone https://github.com/tailu123/robotserver-sdk.git
+cd robotserver_sdk
 ```
 
 2. 创建构建目录并编译：
@@ -40,7 +40,7 @@ make
 3. 安装 SDK（可选）：
 
 ```bash
-sudo make install
+sudo make install / sudo make uninstall
 ```
 
 ## 基本用法
@@ -52,7 +52,7 @@ sudo make install
 ### 1. 包含头文件
 
 ```cpp
-#include <navigation_sdk.h>
+#include <robotserver_sdk.h>
 ```
 
 ### 2. 创建 SDK 实例

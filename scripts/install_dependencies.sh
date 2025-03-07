@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# X30机器狗导航SDK依赖安装脚本
+# 机器狗RobotServer SDK依赖安装脚本
 # 此脚本用于自动安装SDK所需的所有依赖库
 
 set -e  # 遇到错误立即退出
@@ -149,7 +149,7 @@ install_deps_macos() {
 # 验证安装
 verify_installation() {
     print_info "验证安装..."
-    
+
     # 检查CMake
     if command -v cmake &> /dev/null; then
         CMAKE_VERSION=$(cmake --version | head -n1 | cut -d" " -f3)
@@ -158,7 +158,7 @@ verify_installation() {
         print_error "CMake安装失败"
         INSTALL_SUCCESS=false
     fi
-    
+
     # 检查Boost
     if [ -d "/usr/include/boost" ] || [ -d "/usr/local/include/boost" ]; then
         print_success "Boost库已安装"
@@ -166,21 +166,21 @@ verify_installation() {
         print_error "Boost库安装失败"
         INSTALL_SUCCESS=false
     fi
-    
+
     # 检查nlohmann/json
     if [ -f "/usr/include/nlohmann/json.hpp" ] || [ -f "/usr/local/include/nlohmann/json.hpp" ]; then
         print_success "nlohmann/json库已安装"
     else
         print_warning "未检测到nlohmann/json库，可能需要手动安装"
     fi
-    
+
     # 检查rapidxml
     if [ -f "/usr/include/rapidxml.hpp" ] || [ -f "/usr/local/include/rapidxml.hpp" ]; then
         print_success "rapidxml库已安装"
     else
         print_warning "未检测到rapidxml库，可能需要手动安装"
     fi
-    
+
     if [ "$INSTALL_SUCCESS" = false ]; then
         print_error "部分依赖安装失败，请查看上面的错误信息"
         exit 1
@@ -191,13 +191,13 @@ verify_installation() {
 main() {
     print_info "机器狗RobotServerSDK依赖安装脚本"
     print_info "=============================="
-    
+
     # 检测操作系统
     detect_os
     print_info "检测到操作系统: $OS $VER"
-    
+
     INSTALL_SUCCESS=true
-    
+
     # 根据操作系统安装依赖
     case "$OS" in
         *Ubuntu*|*Debian*)
@@ -220,10 +220,10 @@ main() {
             exit 1
             ;;
     esac
-    
+
     # 验证安装
     verify_installation
-    
+
     print_success "所有依赖安装完成！"
     print_info "现在您可以编译和使用机器狗RobotServerSDK了。"
 }

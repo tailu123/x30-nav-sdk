@@ -1,8 +1,8 @@
-# X30 机器狗RobotServer SDK 架构设计
+# 机器狗RobotServer SDK 架构设计
 
 ## 1. 架构概述
 
-X30 机器狗RobotServer SDK 采用**简洁的分层架构**设计，确保系统具有**高可维护性**和**良好扩展性**。本文档简要介绍 SDK 的整体架构和核心组件。
+机器狗RobotServer SDK 采用**简洁的分层架构**设计，确保系统具有**高可维护性**和**良好扩展性**。本文档简要介绍 SDK 的整体架构和核心组件。
 
 ### 1.1 核心层次结构
 
@@ -199,35 +199,35 @@ sequenceDiagram
     participant Impl as RobotServerSdkImpl
     participant Net as AsioNetworkModel
     participant IOThread as IO线程
-    participant Dog as X30机器狗系统
+    participant Dog as 机器狗系统
 
     %% Connection Flow
     App->>SDK: connect(host, port)
     SDK->>Impl: connect(host, port)
     Impl->>Net: connect(host, port)
-    
+
     %% 异步连接请求
     Net->>Dog: async_connect(socket_, endpoints, callback)
-    
+
     %% 主线程等待连接完成或超时
     Net->>Net: run_one_for(connection_timeout_)
-    
+
     Net-->>Dog: TCP连接请求
     Dog-->>Net: 连接响应
     Net-->>Net: 调用连接完成回调,connected_ = true
-    
+
     %% 启动专用IO线程
     Net->>IOThread: 创建并启动线程(ioThreadFunc)
     Note over IOThread,IOThread: IO线程持续运行io_context_.run()
-    
+
     %% 启动第一次接收
     Net->>Net: startReceive()
-    
+
     %% 返回连接结果
     Net->>Impl: 返回true(连接成功)
     Impl->>SDK: 返回true
     SDK->>App: 返回true
-    
+
     %% 后续的异步操作
     IOThread-->>Dog: send
     Dog-->>IOThread: receive
@@ -245,7 +245,7 @@ sequenceDiagram
     participant Proto as Serializer
     participant Net as AsioNetworkModel
     participant IO as IO线程
-    participant Dog as X30机器狗系统
+    participant Dog as 机器狗系统
 
     %% Request Flow
     App->>SDK: request1002_RunTimeStatus()
@@ -281,7 +281,7 @@ sequenceDiagram
     participant Proto as Serializer
     participant Net as AsioNetworkModel
     participant IO as IO线程
-    participant Dog as X30机器狗系统
+    participant Dog as 机器狗系统
 
     %% Request Flow
     App->>SDK: request1003_StartNavTask(points, callback)
@@ -330,13 +330,13 @@ SDK 架构设计考虑了未来扩展需求：
 
 ## 6. 总结
 
-X30 机器狗导航 SDK 采用简洁的三层架构设计，各组件职责明确，相互独立，具有以下优势：
+机器狗RobotServer SDK 采用简洁的三层架构设计，各组件职责明确，相互独立，具有以下优势：
 
 - **高可维护性**：清晰的层次结构和接口定义
 - **良好扩展性**：松耦合设计便于添加新功能
 - **易用性**：简洁的 API 设计，支持同步和异步操作
 
-通过这种架构设计，SDK 为开发者提供了稳定、可靠、易用的机器狗导航控制功能，同时保持了系统的灵活性和可扩展性。
+通过这种架构设计，SDK 为开发者提供了稳定、可靠、易用的机器狗控制功能，同时保持了系统的灵活性和可扩展性。
 
 ## 下一步
 

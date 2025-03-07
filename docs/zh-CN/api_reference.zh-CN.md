@@ -1,30 +1,30 @@
 # API 参考
 
-本文档提供 X30 机器狗导航 SDK 的详细 API 参考，包括所有公共类、方法、枚举和数据结构的说明。
+本文档提供机器狗 RobotServer SDK 的详细 API 参考，包括所有公共类、方法、枚举和数据结构的说明。
 
 ## 目录
 
-- [NavigationSdk 类](#navigationsdk-类)
+- [RobotServerSdk 类](#RobotServerSdk-类)
 - [数据类型](#数据类型)
 - [枚举类型](#枚举类型)
 - [回调函数](#回调函数)
 
-## NavigationSdk 类
+## RobotServerSdk 类
 
-`NavigationSdk` 是 SDK 的主要接口类，提供与机器狗控制系统通信的所有功能。
+`RobotServerSdk` 是 SDK 的主要接口类，提供与机器狗控制系统通信的所有功能。
 
 ### 构造函数和析构函数
 
 ```cpp
 /**
- * @brief 创建 NavigationSdk 实例
+ * @brief 创建 RobotServerSdk 实例
  */
-NavigationSdk();
+RobotServerSdk();
 
 /**
- * @brief 销毁 NavigationSdk 实例，释放所有资源
+ * @brief 销毁 RobotServerSdk 实例，释放所有资源
  */
-~NavigationSdk();
+~RobotServerSdk();
 ```
 
 ### 连接管理
@@ -35,7 +35,6 @@ NavigationSdk();
  * @param host 主机地址（IP 或域名）
  * @param port 端口号
  * @return 如果连接请求已成功发送，则返回 true；否则返回 false
- * @note 连接结果将通过 EventCallback 通知
  */
 bool connect(const std::string& host, uint16_t port);
 
@@ -51,17 +50,6 @@ void disconnect();
 bool isConnected() const;
 ```
 
-### 事件回调
-
-```cpp
-/**
- * @brief 设置事件回调函数
- * @param callback 事件回调函数
- * @note 事件回调函数在 IO 线程中调用，不应执行长时间操作
- */
-void setEventCallback(EventCallback callback);
-```
-
 ### 实时状态
 
 ```cpp
@@ -69,7 +57,7 @@ void setEventCallback(EventCallback callback);
  * @brief 获取机器狗实时状态（同步方法）
  * @return 包含实时状态如位置、速度、角度、电量等
  */
-RealTimeStatus getRealTimeStatus();
+RealTimeStatus request1002_RunTimeStatus();
 ```
 
 ### 导航任务
@@ -78,24 +66,24 @@ RealTimeStatus getRealTimeStatus();
 /**
  * @brief 开始导航任务（异步方法）
  * @param navigation_points 导航点列表
- * @param callback 结果回调函数
+ * @param navigationResultCallback 结果回调函数
  * @note 导航任务完成后，会通过回调函数返回结果; 回调函数在IO线程中调用，不应执行长时间操作
  */
-void startNavigationAsync(
+void request1003_StartNavTask(
     const std::vector<NavigationPoint>& navigation_points,
-    NavigationResultCallback callback);
+    NavigationResultCallback navigationResultCallback);
 
 /**
  * @brief 取消导航任务（同步方法）
  * @return 如果取消成功，则返回 true；否则返回 false
  */
-bool cancelNavigation();
+bool request1004_CancelNavTask();
 
 /**
- * @brief 查询任务状态（同步方法）
+ * @brief 查询导航任务状态（同步方法）
  * @return 包含任务状态和错误码
  */
-TaskStatusResult queryTaskStatus();
+TaskStatusResult request1007_NavTaskStatus();
 ```
 
 ### 版本信息
@@ -114,7 +102,7 @@ static std::string getVersion();
 
 ```cpp
 /**
- * @brief 导航点
+ * @brief 1003 导航点
  */
 struct NavigationPoint {
     int mapId = 0;       ///< 地图ID
@@ -138,7 +126,7 @@ struct NavigationPoint {
 
 ```cpp
 /**
- * @brief 机器狗实时状态
+ * @brief 1002 获取机器狗实时状态
  */
 struct RealTimeStatus {
     int motionState = 0;                ///< 运动状态
@@ -174,7 +162,7 @@ struct RealTimeStatus {
 
 ```cpp
 /**
- * @brief 导航任务结果
+ * @brief 1003 导航任务结果
  */
 struct NavigationResult {
     int value = 0;                                                  ///< 导航任务目标点编号，与下发导航任务请求对应
@@ -187,25 +175,12 @@ struct NavigationResult {
 
 ```cpp
 /**
- * @brief 任务状态查询结果
+ * @brief 1007 任务状态查询结果
  */
 struct TaskStatusResult {
     int value = 0;                                                      ///< 导航任务目标点编号，与下发导航任务请求对应
     NavigationStatus status = NavigationStatus::COMPLETED;              ///< 导航状态:  0:已完成; 1:执行中; 2:失败
     ErrorCode_QueryStatus errorCode = ErrorCode_QueryStatus::COMPLETED; ///< 错误码:   0:成功; 1:执行中; 2:失败
-};
-```
-
-### Event
-
-```cpp
-/**
- * @brief 事件信息
- */
-struct Event {
-    EventType type;                                     ///< 事件类型
-    std::string message;                                ///< 事件消息
-    std::chrono::system_clock::time_point timestamp;    ///< 事件时间戳
 };
 ```
 
@@ -215,7 +190,7 @@ struct Event {
 
 ```cpp
 /**
- * @brief 导航任务响应ErrorCode枚举
+ * @brief 1003 导航任务响应ErrorCode枚举
  */
 enum class ErrorCode_Navigation {
     SUCCESS = 0,      ///< 操作成功
@@ -231,7 +206,7 @@ enum class ErrorCode_Navigation {
 
 ```cpp
 /**
- * @brief 导航任务响应ErrorStatus枚举
+ * @brief 1003 导航任务响应ErrorStatus枚举
  */
 enum class ErrorStatus_Navigation {
     DEFAULT = 0,                                                                 ///< 默认值
@@ -280,7 +255,7 @@ enum class ErrorStatus_Navigation {
 
 ```cpp
 /**
- * @brief 任务状态查询ErrorCode枚举
+ * @brief 1007 任务状态查询ErrorCode枚举
  */
 enum class ErrorCode_QueryStatus {
     COMPLETED = 0,          ///< 任务已完成
@@ -298,7 +273,7 @@ enum class ErrorCode_QueryStatus {
 
 ```cpp
 /**
- * @brief 任务状态查询status枚举
+ * @brief 1007 任务状态查询status枚举
  */
 enum class Status_QueryStatus {
     COMPLETED = 0,    ///< 任务已完成
@@ -311,7 +286,7 @@ enum class Status_QueryStatus {
 
 ```cpp
 /**
- * @brief 实时状态查询ErrorCode枚举
+ * @brief 1002 实时状态查询ErrorCode枚举
  */
 enum class ErrorCode_RealTimeStatus {
     SUCCESS = 0,            ///< 操作成功
@@ -320,18 +295,6 @@ enum class ErrorCode_RealTimeStatus {
     TIMEOUT = 2,            ///< 超时
     NOT_CONNECTED = 3,      ///< 未连接
     UNKNOWN_ERROR = 4       ///< 未知错误
-};
-```
-
-### EventType
-
-```cpp
-/**
- * @brief 事件类型枚举
- */
-enum class EventType {
-    CONNECTED,           ///< 已连接
-    DISCONNECTED,        ///< 已断开连接
 };
 ```
 
@@ -356,100 +319,19 @@ enum class MessageType {
 
 ## 回调函数
 
-### EventCallback
-
-```cpp
-/**
- * @brief 事件回调函数类型
- * @param event 事件
- */
-using EventCallback = std::function<void(const Event& event)>;
-```
-
 ### NavigationResultCallback
 
 ```cpp
 /**
  * @brief 导航结果回调函数类型
  * @param result 导航结果
- * @param error 错误码
  */
-using NavigationResultCallback = std::function<void(const NavigationResult& result, ErrorCode error)>;
+using NavigationResultCallback = std::function<void(const NavigationResult& result)>;
 ```
 
 ## 使用示例
 
-### 同步方法示例
-
-```cpp
-#include <navigation_sdk.h>
-#include <iostream>
-
-int main() {
-    // 创建 SDK 实例
-    nav_sdk::NavigationSdk sdk;
-
-    // 设置事件回调
-    sdk.setEventCallback([](const nav_sdk::Event& event) {
-        std::cout << "事件: " << static_cast<int>(event.type) << ", 消息: " << event.message << std::endl;
-    });
-
-    // 连接到机器狗控制系统
-    if (sdk.connect("192.168.1.106", 30000)) {
-        std::cout << "连接请求已发送" << std::endl;
-    } else {
-        std::cout << "连接请求发送失败" << std::endl;
-        return 1;
-    }
-
-    // 等待连接建立
-    std::this_thread::sleep_for(std::chrono::seconds(2));
-
-    if (sdk.isConnected()) {
-        // 获取实时状态
-        auto realTimeStatus = sdk.getRealTimeStatus();
-        if (realTimeStatus.errorCode == ErrorCode_RealTimeStatus::SUCCESS) {
-            std::cout << "纬度: " << realTimeStatus.latitude << ", 经度: " << realTimeStatus.longitude << std::endl;
-            std::cout << "电池电量: " << realTimeStatus.battery_level << "%" << std::endl;
-        } else {
-            std::cout << "获取实时状态失败: " << static_cast<int>(realTimeStatus.errorCode) << std::endl;
-        }
-
-        // 创建导航点
-        std::vector<nav_sdk::NavigationPoint> points = {
-            {39.9042, 116.4074, 0, 1.0, 90.0},  // 北京
-            {31.2304, 121.4737, 0, 1.0, 180.0}  // 上海
-        };
-
-        // 开始导航任务
-        sdk.startNavigationAsync(points, [](void(const NavigationResult& navigationResult)) {
-            if (navigationResult.errorCode == ErrorCode_Navigation::SUCCESS) {
-                std::cout << "导航任务成功完成!" << std::endl;
-            } else {
-                std::cout << "导航任务失败, errorStatus: " << static_cast<int>(navigationResult.errorStatus) << std::endl;
-            }
-        });
-
-
-        // 查询任务状态
-        auto taskStatus = sdk.queryTaskStatus();
-        std::cout << "任务状态: " << static_cast<int>(taskStatus.status) << std::endl;
-
-        // 取消任务
-        auto cancelResult = sdk.cancelNavigation();
-        if (cancelResult) {
-            std::cout << "任务已取消" << std::endl;
-        } else {
-            std::cout << "取消任务失败"<< std::endl;
-        }
-    }
-
-    // 断开连接
-    sdk.disconnect();
-
-    return 0;
-}
-```
+参考 `examples/basic/basic_example.cpp` 文件，实现了一个简单的示例，展示如何使用 SDK 连接到机器狗并发送导航任务。
 
 ## 错误处理
 
@@ -463,4 +345,9 @@ SDK 的所有公共 API 都是线程安全的，可以从多个线程同时调�
 
 | 版本 | 发布日期 | 主要变更 |
 |------|----------|---------|
-| 0.1.0 | 2025-03-05 | 初始版本 |
+| 0.1.0 | 2025-03-07 | 初始版本 |
+
+## 下一步
+
+- 查看 [快速开始](quick_start.md) 了解 SDK 的整体架构和设计理念
+- 查看 [SDK 架构概述](architecture.md) 了解 SDK 的整体架构和设计理念

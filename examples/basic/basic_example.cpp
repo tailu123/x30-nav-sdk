@@ -1,5 +1,5 @@
 #include <cstdint>
-#include <navigation_sdk.h>
+#include <robotserver_sdk.h>
 #include <iostream>
 #include <thread>
 #include <atomic>
@@ -140,7 +140,7 @@ int main(int argc, char* argv[]) {
     std::string host = argv[1];
     uint16_t port = static_cast<uint16_t>(std::stoi(argv[2]));
 
-    std::cout << "X30 机器狗 RobotServer SDK 导航示例程序" << std::endl;
+    std::cout << "机器狗 RobotServer SDK 示例程序" << std::endl;
     std::cout << "SDK 版本: " << robotserver_sdk::RobotServerSdk::getVersion() << std::endl;
     std::cout << "连接到: " << host << ":" << port << std::endl;
 
