@@ -37,3 +37,8 @@ Thumbs.db
 # 临时文件
 tmp/
 temp/
+
+# 文档生成目录
+docs/doxygen/
+docs/sphinx/build/
+docs/sphinx/locale/gettext/

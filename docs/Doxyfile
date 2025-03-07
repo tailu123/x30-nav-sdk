@@ -1,0 +1,33 @@
+PROJECT_NAME           = "RobotServer SDK"
+PROJECT_NUMBER         = 0.1.0
+PROJECT_BRIEF          = "SDK for controlling and monitoring robot dog navigation tasks"
+OUTPUT_DIRECTORY       = doxygen
+INPUT                  = ../include ../src
+FILE_PATTERNS          = *.h *.hpp *.cpp
+RECURSIVE              = YES
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = YES
+HIDE_UNDOC_MEMBERS     = NO
+HIDE_UNDOC_CLASSES     = NO
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+GENERATE_LATEX         = NO
+GENERATE_XML           = YES
+XML_OUTPUT             = xml
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = YES
+SEARCHENGINE           = YES
+GENERATE_TREEVIEW      = YES
+QUIET                  = NO
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_DOC_ERROR      = YES
+WARN_NO_PARAMDOC       = YES
+INPUT_ENCODING         = UTF-8
+DOXYFILE_ENCODING      = UTF-8
+ALIASES                += "zh=\xrefitem zh \"Chinese\" \"Chinese Documentation\""
+ALIASES                += "en=\xrefitem en \"English\" \"English Documentation\""
+ALIASES                += "tw=\xrefitem tw \"Traditional Chinese\" \"Traditional Chinese Documentation\""

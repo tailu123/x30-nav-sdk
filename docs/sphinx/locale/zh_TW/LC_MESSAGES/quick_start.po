@@ -1,0 +1,148 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, RobotServer Team
+# This file is distributed under the same license as the RobotServer SDK
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: RobotServer SDK 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-03-08 01:39+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_TW\n"
+"Language-Team: zh_TW <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/quick_start.rst:2
+msgid "快速入门"
+msgstr ""
+
+#: ../../source/quick_start.rst:4
+msgid "本指南将帮助您快速上手使用 RobotServer SDK，即使您不熟悉 C++ 编程语言。"
+msgstr ""
+
+#: ../../source/quick_start.rst:7
+msgid "系统要求"
+msgstr ""
+
+#: ../../source/quick_start.rst:9
+msgid "在开始使用 SDK 之前，请确保您的系统满足以下要求："
+msgstr ""
+
+#: ../../source/quick_start.rst:11
+msgid "操作系统：Linux、macOS 或 Windows"
+msgstr ""
+
+#: ../../source/quick_start.rst:12
+msgid "C++17 或更高版本的编译器"
+msgstr ""
+
+#: ../../source/quick_start.rst:13
+msgid "CMake 3.10 或更高版本"
+msgstr ""
+
+#: ../../source/quick_start.rst:14
+msgid "Boost 1.66 或更高版本"
+msgstr ""
+
+#: ../../source/quick_start.rst:15
+msgid "nlohmann/json 库"
+msgstr ""
+
+#: ../../source/quick_start.rst:16
+msgid "rapidxml 库"
+msgstr ""
+
+#: ../../source/quick_start.rst:19
+msgid "安装依赖"
+msgstr ""
+
+#: ../../source/quick_start.rst:21
+msgid "您可以使用提供的脚本安装所有依赖："
+msgstr ""
+
+#: ../../source/quick_start.rst:29
+msgid "安装 SDK"
+msgstr ""
+
+#: ../../source/quick_start.rst:32
+msgid "从源代码构建"
+msgstr ""
+
+#: ../../source/quick_start.rst:34
+msgid "克隆 SDK 代码库："
+msgstr ""
+
+#: ../../source/quick_start.rst:41
+msgid "创建构建目录并编译："
+msgstr ""
+
+#: ../../source/quick_start.rst:49
+msgid "安装 SDK（可选）："
+msgstr ""
+
+#: ../../source/quick_start.rst:56
+msgid "基本用法"
+msgstr ""
+
+#: ../../source/quick_start.rst:59
+msgid "完整示例"
+msgstr ""
+
+#: ../../source/quick_start.rst:61
+msgid ""
+"参考 ``examples/basic/basic_example.cpp`` 文件，实现了一个简单的示例，展示如何使用 SDK "
+"连接到机器狗并发送导航任务。"
+msgstr ""
+
+#: ../../source/quick_start.rst:64
+msgid "1. 包含头文件"
+msgstr ""
+
+#: ../../source/quick_start.rst:71
+msgid "2. 创建 SDK 实例"
+msgstr ""
+
+#: ../../source/quick_start.rst:79
+msgid "3. 连接到机器狗控制系统"
+msgstr ""
+
+#: ../../source/quick_start.rst:90
+msgid "4. 获取实时状态"
+msgstr ""
+
+#: ../../source/quick_start.rst:99
+msgid "5. 发送导航任务"
+msgstr ""
+
+#: ../../source/quick_start.rst:116
+msgid "6. 查询导航任务状态"
+msgstr ""
+
+#: ../../source/quick_start.rst:125
+msgid "7. 取消导航任务"
+msgstr ""
+
+#: ../../source/quick_start.rst:137
+msgid "8. 断开连接"
+msgstr ""
+
+#: ../../source/quick_start.rst:145
+msgid "下一步"
+msgstr ""
+
+#: ../../source/quick_start.rst:147
+msgid "查看 :doc:`architecture` 了解 SDK 的整体架构和设计理念"
+msgstr ""
+
+#: ../../source/quick_start.rst:148
+msgid "查看 :doc:`api_reference` 了解更多 SDK 功能"
+msgstr ""
+

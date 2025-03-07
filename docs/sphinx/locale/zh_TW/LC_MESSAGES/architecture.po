@@ -1,0 +1,370 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, RobotServer Team
+# This file is distributed under the same license as the RobotServer SDK
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: RobotServer SDK 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-03-08 01:39+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_TW\n"
+"Language-Team: zh_TW <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/architecture.rst:2
+msgid "架构设计"
+msgstr ""
+
+#: ../../source/architecture.rst:4
+msgid "本文档简要介绍 RobotServer SDK 的整体架构和核心组件。"
+msgstr ""
+
+#: ../../source/architecture.rst:7
+msgid "核心层次结构"
+msgstr ""
+
+#: ../../source/architecture.rst:9
+msgid "RobotServer SDK 采用**简洁的分层架构**设计，确保系统具有**高可维护性**和**良好扩展性**。SDK 由以下三个主要层次组成："
+msgstr ""
+
+#: ../../source/architecture.rst:15
+msgid "层次"
+msgstr ""
+
+#: ../../source/architecture.rst:16
+msgid "职责"
+msgstr ""
+
+#: ../../source/architecture.rst:17
+msgid "关键组件"
+msgstr ""
+
+#: ../../source/architecture.rst:18
+msgid "**应用层**"
+msgstr ""
+
+#: ../../source/architecture.rst:19
+msgid "负责调用接口层提供的接口，集成实现业务逻辑"
+msgstr ""
+
+#: ../../source/architecture.rst:20
+msgid "___"
+msgstr ""
+
+#: ../../source/architecture.rst:21
+msgid "**接口层**"
+msgstr ""
+
+#: ../../source/architecture.rst:22
+msgid "负责请求/响应的管理，对外提供功能接口"
+msgstr ""
+
+#: ../../source/architecture.rst:23
+msgid "RobotServerSdk 类、RobotServerSdkImpl 类"
+msgstr ""
+
+#: ../../source/architecture.rst:24
+msgid "**通信层**"
+msgstr ""
+
+#: ../../source/architecture.rst:25
+msgid "负责协议序列化，数据传输"
+msgstr ""
+
+#: ../../source/architecture.rst:26
+msgid "AsioNetworkModel 类、Serializer 类"
+msgstr ""
+
+#: ../../source/architecture.rst:29
+msgid "架构图示"
+msgstr ""
+
+#: ../../source/architecture.rst:53
+msgid "组件详解"
+msgstr ""
+
+#: ../../source/architecture.rst:56
+msgid "接口层（Interface Layer）"
+msgstr ""
+
+#: ../../source/architecture.rst:58
+msgid "接口层是 SDK 与用户应用程序交互的桥梁，提供简洁易用的 API，同时负责业务逻辑实现和各组件协调。"
+msgstr ""
+
+#: ../../source/architecture.rst:60 ../../source/architecture.rst:88
+msgid "**核心组件**"
+msgstr ""
+
+#: ../../source/architecture.rst:62
+msgid "**RobotServerSdk 类**：SDK 的主入口点，封装所有功能接口"
+msgstr ""
+
+#: ../../source/architecture.rst:63
+msgid "**RobotServerSdkImpl 类**：RobotServerSdk 的具体实现"
+msgstr ""
+
+#: ../../source/architecture.rst:64
+msgid "**类型定义**：包括数据结构、枚举类型和回调函数类型"
+msgstr ""
+
+#: ../../source/architecture.rst:65
+msgid "**网络回调接口实现**：处理网络消息"
+msgstr ""
+
+#: ../../source/architecture.rst:66
+msgid "**请求响应管理**：跟踪请求和响应的对应关系"
+msgstr ""
+
+#: ../../source/architecture.rst:68 ../../source/architecture.rst:94
+msgid "**代码位置**"
+msgstr ""
+
+#: ../../source/architecture.rst:70
+msgid "``include/robotserver_sdk.h``：定义 RobotServerSdk 类及其方法"
+msgstr ""
+
+#: ../../source/architecture.rst:71
+msgid "``include/types.h``：定义各种数据结构和类型"
+msgstr ""
+
+#: ../../source/architecture.rst:72
+msgid "``src/robotserver_sdk.cpp``：实现 RobotServerSdkImpl 类"
+msgstr ""
+
+#: ../../source/architecture.rst:74 ../../source/architecture.rst:99
+msgid "**设计特点**"
+msgstr ""
+
+#: ../../source/architecture.rst:76
+msgid "采用 **PIMPL 模式**（指针实现）隐藏实现细节"
+msgstr ""
+
+#: ../../source/architecture.rst:77
+msgid "提供**同步和异步**两种操作方式"
+msgstr ""
+
+#: ../../source/architecture.rst:78
+msgid "使用**回调机制**处理异步事件"
+msgstr ""
+
+#: ../../source/architecture.rst:79
+msgid "实现 **INetworkCallback 接口**接收网络消息"
+msgstr ""
+
+#: ../../source/architecture.rst:80
+msgid "使用**条件变量**和**互斥锁**确保线程安全"
+msgstr ""
+
+#: ../../source/architecture.rst:81
+msgid "管理**请求超时**和**错误处理**"
+msgstr ""
+
+#: ../../source/architecture.rst:84
+msgid "通信层（Communication Layer）"
+msgstr ""
+
+#: ../../source/architecture.rst:86
+msgid "通信层负责与机器狗控制系统进行通信，包括网络连接管理和协议处理。"
+msgstr ""
+
+#: ../../source/architecture.rst:90
+msgid "**Serializer 类**：处理消息的序列化和反序列化"
+msgstr ""
+
+#: ../../source/architecture.rst:91
+msgid "**AsioNetworkModel 类**：基于 Boost.Asio 的网络实现"
+msgstr ""
+
+#: ../../source/architecture.rst:92
+msgid "**INetworkCallback 接口**：定义网络层回调接口"
+msgstr ""
+
+#: ../../source/architecture.rst:96
+msgid "``src/protocol/serializer.hpp/cpp``：协议处理实现"
+msgstr ""
+
+#: ../../source/architecture.rst:97
+msgid "``src/network/asio_network_model.hpp/cpp``：网络通信实现"
+msgstr ""
+
+#: ../../source/architecture.rst:101
+msgid "基于 **Boost.Asio** 实现**异步 TCP 通信**"
+msgstr ""
+
+#: ../../source/architecture.rst:102
+msgid "使用 **Strand** 确保回调的线程安全"
+msgstr ""
+
+#: ../../source/architecture.rst:103
+msgid "支持 **XML** 协议格式"
+msgstr ""
+
+#: ../../source/architecture.rst:106
+msgid "数据流"
+msgstr ""
+
+#: ../../source/architecture.rst:108
+msgid "SDK 中的数据流展示了请求和响应的完整生命周期。"
+msgstr ""
+
+#: ../../source/architecture.rst:110
+msgid "**请求流程**"
+msgstr ""
+
+#: ../../source/architecture.rst:112
+msgid "**用户调用** → 用户通过 RobotServerSdk 接口发起请求"
+msgstr ""
+
+#: ../../source/architecture.rst:113
+msgid "**请求转发** → RobotServerSdkImpl 接收并处理请求"
+msgstr ""
+
+#: ../../source/architecture.rst:114
+msgid "**消息创建** → 创建对应的请求消息对象"
+msgstr ""
+
+#: ../../source/architecture.rst:115
+msgid "**消息序列化** → Serializer 将消息序列化为二进制数据"
+msgstr ""
+
+#: ../../source/architecture.rst:116
+msgid "**网络发送** → AsioNetworkModel 通过网络发送数据"
+msgstr ""
+
+#: ../../source/architecture.rst:118
+msgid "**响应流程**"
+msgstr ""
+
+#: ../../source/architecture.rst:120
+msgid "**数据接收** → AsioNetworkModel 接收网络数据"
+msgstr ""
+
+#: ../../source/architecture.rst:121
+msgid "**数据解析** → Serializer 解析数据并创建响应消息"
+msgstr ""
+
+#: ../../source/architecture.rst:122
+msgid "**消息处理** → RobotServerSdkImpl 处理响应消息"
+msgstr ""
+
+#: ../../source/architecture.rst:123
+msgid "**结果返回** → 结果通过同步返回或异步回调传递给用户"
+msgstr ""
+
+#: ../../source/architecture.rst:126
+msgid "设计特点与优势"
+msgstr ""
+
+#: ../../source/architecture.rst:128
+msgid "**核心设计特点**"
+msgstr ""
+
+#: ../../source/architecture.rst:134
+msgid "特点"
+msgstr ""
+
+#: ../../source/architecture.rst:135
+msgid "描述"
+msgstr ""
+
+#: ../../source/architecture.rst:136
+msgid "优势"
+msgstr ""
+
+#: ../../source/architecture.rst:137
+msgid "**分层设计**"
+msgstr ""
+
+#: ../../source/architecture.rst:138
+msgid "清晰的三层架构"
+msgstr ""
+
+#: ../../source/architecture.rst:139
+msgid "降低耦合，提高可维护性"
+msgstr ""
+
+#: ../../source/architecture.rst:140
+msgid "**接口分离**"
+msgstr ""
+
+#: ../../source/architecture.rst:141
+msgid "通过接口定义组件交互"
+msgstr ""
+
+#: ../../source/architecture.rst:142
+msgid "便于单元测试和模块替换"
+msgstr ""
+
+#: ../../source/architecture.rst:143
+msgid "**异步处理**"
+msgstr ""
+
+#: ../../source/architecture.rst:144
+msgid "支持同步和异步操作"
+msgstr ""
+
+#: ../../source/architecture.rst:145
+msgid "提高系统灵活性和性能"
+msgstr ""
+
+#: ../../source/architecture.rst:146
+msgid "**线程安全**"
+msgstr ""
+
+#: ../../source/architecture.rst:147
+msgid "多种线程同步机制"
+msgstr ""
+
+#: ../../source/architecture.rst:148
+msgid "确保多线程环境安全"
+msgstr ""
+
+#: ../../source/architecture.rst:150
+msgid "**扩展性设计**"
+msgstr ""
+
+#: ../../source/architecture.rst:152
+msgid "SDK 架构设计考虑了未来扩展需求："
+msgstr ""
+
+#: ../../source/architecture.rst:154
+msgid "**新网络协议支持** - 实现新的网络模型类 - 或扩展现有协议处理类"
+msgstr ""
+
+#: ../../source/architecture.rst:158
+msgid "**新序列化格式支持** - 扩展 Serializer 类 - 或实现新的协议处理类"
+msgstr ""
+
+#: ../../source/architecture.rst:163
+msgid "总结"
+msgstr ""
+
+#: ../../source/architecture.rst:165
+msgid "RobotServer SDK 采用简洁的三层架构设计，各组件职责明确，相互独立，具有以下优势："
+msgstr ""
+
+#: ../../source/architecture.rst:167
+msgid "**高可维护性**：清晰的层次结构和接口定义"
+msgstr ""
+
+#: ../../source/architecture.rst:168
+msgid "**良好扩展性**：松耦合设计便于添加新功能"
+msgstr ""
+
+#: ../../source/architecture.rst:169
+msgid "**易用性**：简洁的 API 设计，支持同步和异步操作"
+msgstr ""
+
+#: ../../source/architecture.rst:171
+msgid "通过这种架构设计，SDK 为开发者提供了稳定、可靠、易用的机器狗控制功能，同时保持了系统的灵活性和可扩展性。"
+msgstr ""
+

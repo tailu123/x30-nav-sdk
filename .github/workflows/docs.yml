@@ -1,0 +1,42 @@
+name: Build and Deploy Docs
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'docs/**'
+      - 'include/**'
+      - 'src/**'
+      - '.github/workflows/docs.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'docs/**'
+      - 'include/**'
+      - 'src/**'
+      - '.github/workflows/docs.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y doxygen
+        pip install sphinx sphinx_rtd_theme breathe sphinx-intl
+
+    - name: Build docs
+      run: |
+        chmod +x docs/build_docs.sh
+        ./docs/build_docs.sh
+
+    - name: Deploy to GitHub Pages
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs/sphinx/build
+        force_orphan: true

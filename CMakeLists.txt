@@ -18,7 +18,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # 查找依赖包
-find_package(Boost REQUIRED COMPONENTS system thread)
+find_package(Boost 1.66 REQUIRED COMPONENTS system thread)
 find_package(nlohmann_json REQUIRED)
 find_package(RapidXML QUIET)
 
@@ -64,6 +64,11 @@ install(TARGETS ${PROJECT_NAME}
     ARCHIVE DESTINATION lib
     RUNTIME DESTINATION bin
     PUBLIC_HEADER DESTINATION include
+)
+
+# 安装头文件
+install(DIRECTORY include/
+    DESTINATION include
 )
 
 # 添加示例子目录
@@ -117,3 +122,17 @@ message(STATUS "  C++ Compiler:      ${CMAKE_CXX_COMPILER}")
 message(STATUS "  C++ flags:         ${CMAKE_CXX_FLAGS}")
 message(STATUS "  Boost version:     ${Boost_VERSION}")
 message(STATUS "")
+
+# 文档生成
+find_package(Doxygen)
+if(DOXYGEN_FOUND)
+    add_custom_target(docs
+        COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/docs/build_docs.sh
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "生成 API 文档..."
+        VERBATIM
+    )
+    message(STATUS "Doxygen found, 'docs' target available")
+else()
+    message(STATUS "Doxygen not found, 'docs' target not available")
+endif()

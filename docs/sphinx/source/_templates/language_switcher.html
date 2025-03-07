@@ -1,0 +1,7 @@
+<div class="language-switcher">
+  {% for lang_code, lang_name in languages.items() %}
+    {% if lang_code != current_language %}
+      <a href="{{ pathto('../' + lang_code + '/' + pagename + '.html', 1) }}">{{ lang_name }}</a>
+    {% endif %}
+  {% endfor %}
+</div>
