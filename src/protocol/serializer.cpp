@@ -1,4 +1,4 @@
-#include "x30_protocol.hpp"
+#include "serializer.hpp"
 #include <nlohmann/json.hpp>
 #include <rapidxml/rapidxml.hpp>
 #include <sstream>
@@ -6,7 +6,7 @@
 
 namespace protocol {
 
-std::unique_ptr<IMessage> X30Protocol::parseReceivedData(const std::string& data) {
+std::unique_ptr<IMessage> Serializer::deserializeMessage(const std::string& data) {
     try {
         // 检查数据长度是否足够包含协议头
         constexpr size_t HEADER_SIZE = sizeof(ProtocolHeader);
@@ -61,7 +61,7 @@ std::unique_ptr<IMessage> X30Protocol::parseReceivedData(const std::string& data
     }
 }
 
-std::string X30Protocol::serializeMessage(const IMessage& message) {
+std::string Serializer::serializeMessage(const IMessage& message) {
     // 获取消息体
     std::string message_body = message.serialize();
 
@@ -78,7 +78,7 @@ std::string X30Protocol::serializeMessage(const IMessage& message) {
     return result;
 }
 
-MessageType X30Protocol::extractMessageType(const std::string& data) {
+MessageType Serializer::extractMessageType(const std::string& data) {
     try {
         // 检查数据是否为XML格式
         if (data.find("<?xml") != std::string::npos || data.find("<PatrolDevice>") != std::string::npos) {
@@ -96,7 +96,7 @@ MessageType X30Protocol::extractMessageType(const std::string& data) {
     }
 }
 
-int X30Protocol::extractTypeFromXml(const std::string& data) {
+int Serializer::extractTypeFromXml(const std::string& data) {
     try {
         rapidxml::xml_document<> doc;
         // 创建一个可修改的数据副本，因为rapidxml会修改输入字符串
@@ -125,7 +125,7 @@ int X30Protocol::extractTypeFromXml(const std::string& data) {
     }
 }
 
-int X30Protocol::extractCommandFromXml(const std::string& data) {
+int Serializer::extractCommandFromXml(const std::string& data) {
     try {
         rapidxml::xml_document<> doc;
         // 创建一个可修改的数据副本
@@ -154,7 +154,7 @@ int X30Protocol::extractCommandFromXml(const std::string& data) {
     }
 }
 
-MessageType X30Protocol::determineMessageType(int type) {
+MessageType Serializer::determineMessageType(int type) {
     // 查找Type对应的消息类型
     auto it = type_to_message_type_.find(type);
     if (it == type_to_message_type_.end()) {

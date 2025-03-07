@@ -35,7 +35,6 @@ NavigationSdk();
  * @param host 主机地址（IP 或域名）
  * @param port 端口号
  * @return 如果连接请求已成功发送，则返回 true；否则返回 false
- * @note 连接结果将通过 EventCallback 通知
  */
 bool connect(const std::string& host, uint16_t port);
 
@@ -51,17 +50,6 @@ void disconnect();
 bool isConnected() const;
 ```
 
-### 事件回调
-
-```cpp
-/**
- * @brief 设置事件回调函数
- * @param callback 事件回调函数
- * @note 事件回调函数在 IO 线程中调用，不应执行长时间操作
- */
-void setEventCallback(EventCallback callback);
-```
-
 ### 实时状态
 
 ```cpp
@@ -69,7 +57,7 @@ void setEventCallback(EventCallback callback);
  * @brief 获取机器狗实时状态（同步方法）
  * @return 包含实时状态如位置、速度、角度、电量等
  */
-RealTimeStatus getRealTimeStatus();
+RealTimeStatus request1002_RunTimeStatus();
 ```
 
 ### 导航任务
@@ -78,24 +66,24 @@ RealTimeStatus getRealTimeStatus();
 /**
  * @brief 开始导航任务（异步方法）
  * @param navigation_points 导航点列表
- * @param callback 结果回调函数
+ * @param navigationResultCallback 结果回调函数
  * @note 导航任务完成后，会通过回调函数返回结果; 回调函数在IO线程中调用，不应执行长时间操作
  */
-void startNavigationAsync(
+void request1003_StartNavTask(
     const std::vector<NavigationPoint>& navigation_points,
-    NavigationResultCallback callback);
+    NavigationResultCallback navigationResultCallback);
 
 /**
  * @brief 取消导航任务（同步方法）
  * @return 如果取消成功，则返回 true；否则返回 false
  */
-bool cancelNavigation();
+bool request1004_CancelNavTask();
 
 /**
  * @brief 查询任务状态（同步方法）
  * @return 包含任务状态和错误码
  */
-TaskStatusResult queryTaskStatus();
+TaskStatusResult request1007_NavTaskStatus();
 ```
 
 ### 版本信息
@@ -356,25 +344,14 @@ enum class MessageType {
 
 ## 回调函数
 
-### EventCallback
-
-```cpp
-/**
- * @brief 事件回调函数类型
- * @param event 事件
- */
-using EventCallback = std::function<void(const Event& event)>;
-```
-
 ### NavigationResultCallback
 
 ```cpp
 /**
  * @brief 导航结果回调函数类型
  * @param result 导航结果
- * @param error 错误码
  */
-using NavigationResultCallback = std::function<void(const NavigationResult& result, ErrorCode error)>;
+using NavigationResultCallback = std::function<void(const NavigationResult& result)>;
 ```
 
 ## 使用示例
@@ -389,11 +366,6 @@ int main() {
     // 创建 SDK 实例
     nav_sdk::NavigationSdk sdk;
 
-    // 设置事件回调
-    sdk.setEventCallback([](const nav_sdk::Event& event) {
-        std::cout << "事件: " << static_cast<int>(event.type) << ", 消息: " << event.message << std::endl;
-    });
-
     // 连接到机器狗控制系统
     if (sdk.connect("192.168.1.106", 30000)) {
         std::cout << "连接请求已发送" << std::endl;
@@ -407,7 +379,7 @@ int main() {
 
     if (sdk.isConnected()) {
         // 获取实时状态
-        auto realTimeStatus = sdk.getRealTimeStatus();
+        auto realTimeStatus = sdk.request1002_RunTimeStatus();
         if (realTimeStatus.errorCode == ErrorCode_RealTimeStatus::SUCCESS) {
             std::cout << "纬度: " << realTimeStatus.latitude << ", 经度: " << realTimeStatus.longitude << std::endl;
             std::cout << "电池电量: " << realTimeStatus.battery_level << "%" << std::endl;
@@ -422,7 +394,7 @@ int main() {
         };
 
         // 开始导航任务
-        sdk.startNavigationAsync(points, [](void(const NavigationResult& navigationResult)) {
+        sdk.request1003_StartNavTask(points, [](void(const NavigationResult& navigationResult)) {
             if (navigationResult.errorCode == ErrorCode_Navigation::SUCCESS) {
                 std::cout << "导航任务成功完成!" << std::endl;
             } else {
@@ -432,11 +404,11 @@ int main() {
 
 
         // 查询任务状态
-        auto taskStatus = sdk.queryTaskStatus();
+        auto taskStatus = sdk.request1007_NavTaskStatus();
         std::cout << "任务状态: " << static_cast<int>(taskStatus.status) << std::endl;
 
         // 取消任务
-        auto cancelResult = sdk.cancelNavigation();
+        auto cancelResult = sdk.request1004_CancelNavTask();
         if (cancelResult) {
             std::cout << "任务已取消" << std::endl;
         } else {

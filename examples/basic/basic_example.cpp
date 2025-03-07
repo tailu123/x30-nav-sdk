@@ -134,14 +134,6 @@ void printNavigationResult(const nav_sdk::NavigationResult& result) {
     std::cout << "========================" << std::endl;
 }
 
-/**
- * @brief 事件回调函数
- * @param event 事件信息
- */
-void onEvent(const nav_sdk::Event& event) {
-    std::cout << "收到事件: " << event.toString() << std::endl;
-}
-
 int main(int argc, char* argv[]) {
     // 检查命令行参数
     if (argc < 3) {
@@ -164,9 +156,6 @@ int main(int argc, char* argv[]) {
 
         nav_sdk::NavigationSdk sdk(options);
 
-        // 设置事件回调
-        sdk.setEventCallback(onEvent);
-
         // 连接到机器狗控制系统
         if (!sdk.connect(host, port)) {
             std::cerr << "连接失败!" << std::endl;
@@ -176,8 +165,8 @@ int main(int argc, char* argv[]) {
         std::cout << "连接成功!" << std::endl;
 
         // 获取初始实时状态
-        nav_sdk::RealTimeStatus status = sdk.getRealTimeStatus();
-        std::cout << "getRealTimeStatus complete" << std::endl;
+        nav_sdk::RealTimeStatus status = sdk.request1002_RunTimeStatus();
+        std::cout << "request1002_RunTimeStatus complete" << std::endl;
         printStatus(status);
 
         // 创建导航点
@@ -188,7 +177,7 @@ int main(int argc, char* argv[]) {
 
         // 异步发送导航任务（使用回调形式）
         std::cout << "开始导航任务..." << std::endl;
-        sdk.startNavigationAsync(points, [&](const nav_sdk::NavigationResult& result) {
+        sdk.request1003_StartNavTask(points, [&](const nav_sdk::NavigationResult& result) {
             // 打印导航任务结果
             printNavigationResult(result);
 
@@ -208,17 +197,17 @@ int main(int argc, char* argv[]) {
             std::cout << "\n轮询 #" << pollCount << ":" << std::endl;
 
             // 查询任务状态
-            auto taskStatus = sdk.queryTaskStatus();
+            auto taskStatus = sdk.request1007_NavTaskStatus();
             printTaskStatus(taskStatus);
 
             // 获取实时状态
-            auto status = sdk.getRealTimeStatus();
+            auto status = sdk.request1002_RunTimeStatus();
             printStatus(status);
         }
 
         if (!navigationResponseReceived) {
             std::cout << "达到最大轮询次数，尝试取消任务..." << std::endl;
-            if (sdk.cancelNavigation()) {
+            if (sdk.request1004_CancelNavTask()) {
                 std::cout << "导航任务已取消" << std::endl;
             } else {
                 std::cout << "导航任务取消失败" << std::endl;

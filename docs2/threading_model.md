@@ -81,17 +81,20 @@ SDK 提供了同步和异步两种操作方式：
 同步操作会阻塞调用线程，直到操作完成或超时：
 
 ```cpp
+// 同步连接
+sdk.connect(host, port);
+
 // 同步获取实时状态
-auto status = sdk.getRealTimeStatus();
+auto status = sdk.request1002_RunTimeStatus();
 
 // 同步发送取消导航任务
-auto result = sdk.cancelNavigation();
+auto result = sdk.request1004_CancelNavTask();
 
 // 同步查询任务状态
-auto taskStatus = sdk.queryTaskStatus();
+auto taskStatus = sdk.request1007_NavTaskStatus();
 ```
 
-同步操作的实现原理：
+1002, 1004, 1007 同步操作的实现原理：
 
 1. 创建请求消息并发送
 2. 创建条件变量和互斥锁
@@ -104,12 +107,12 @@ auto taskStatus = sdk.queryTaskStatus();
 
 ```cpp
 // 异步发送导航任务
-sdk.startNavigationAsync(points, [](const NavigationResult& result) {
+sdk.request1003_StartNavTask(points, [](const NavigationResult& result) {
     // 处理结果
 });
 ```
 
-异步操作的实现原理：
+1003 异步操作的实现原理：
 
 1. 创建请求消息并发送
 2. 保存回调函数
@@ -135,7 +138,7 @@ SDK 的设计确保了线程安全性：
 2. **内部组件**：使用互斥锁、条件变量和 Strand 机制确保线程安全
 3. **回调函数**：使用 Strand 机制确保回调函数按顺序执行，避免并发访问问题
 
-## 异步事件通知
+## 异步事件通知(待支持自动重连功能后补充)
 
 SDK 使用事件回调机制通知用户异步事件：
 

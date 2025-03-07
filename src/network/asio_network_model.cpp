@@ -1,5 +1,5 @@
 #include "asio_network_model.hpp"
-#include "protocol/x30_protocol.hpp"
+#include "protocol/serializer.hpp"
 #include <iostream>
 #include <chrono>
 #include <sstream>
@@ -134,8 +134,8 @@ bool AsioNetworkModel::sendMessage(const protocol::IMessage& message) {
 
     try {
         // 序列化消息
-        protocol::X30Protocol protocol;
-        std::string data = protocol.serializeMessage(message);
+        protocol::Serializer serializer;
+        std::string data = serializer.serializeMessage(message);
 
         // 使用 strand 包装异步写入操作，确保线程安全
         boost::asio::post(strand_, [this, data = std::move(data)]() {
@@ -148,7 +148,7 @@ bool AsioNetworkModel::sendMessage(const protocol::IMessage& message) {
                 boost::asio::buffer(data),
                 boost::asio::bind_executor(strand_,
                     [this](const boost::system::error_code& error, std::size_t bytes_transferred) {
-                        handleSend(error, bytes_transferred);
+                        send(error, bytes_transferred);
                     }
                 )
             );
@@ -171,7 +171,7 @@ void AsioNetworkModel::startReceive() {
         boost::asio::buffer(receive_buffer_),
         boost::asio::bind_executor(strand_,
             [this](const boost::system::error_code& error, std::size_t bytes_transferred) {
-                handleReceive(error, bytes_transferred);
+                receive(error, bytes_transferred);
             }
         )
     );
@@ -206,7 +206,7 @@ void safeCallback(const Callback& callback, const std::string& callbackType, Arg
     }
 }
 
-void AsioNetworkModel::handleReceive(const boost::system::error_code& error, std::size_t bytes_transferred) {
+void AsioNetworkModel::receive(const boost::system::error_code& error, std::size_t bytes_transferred) {
     if (error) {
         if (error != boost::asio::error::operation_aborted) {
             std::cerr << "接收数据错误: " << error.message() << std::endl;
@@ -219,8 +219,8 @@ void AsioNetworkModel::handleReceive(const boost::system::error_code& error, std
     receive_data_.append(receive_buffer_.data(), bytes_transferred);
 
     // 尝试解析消息
-    protocol::X30Protocol protocol;
-    auto message = protocol.parseReceivedData(receive_data_);
+    protocol::Serializer serializer;
+    auto message = serializer.deserializeMessage(receive_data_);
     if (message) {
         // 清空接收缓冲区
         receive_data_.clear();
@@ -241,7 +241,7 @@ void AsioNetworkModel::handleReceive(const boost::system::error_code& error, std
     startReceive();
 }
 
-void AsioNetworkModel::handleSend(const boost::system::error_code& error, std::size_t) {
+void AsioNetworkModel::send(const boost::system::error_code& error, std::size_t) {
     if (error) {
         std::cerr << "发送数据错误: " << error.message() << std::endl;
         if (error != boost::asio::error::operation_aborted) {

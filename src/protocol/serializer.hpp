@@ -12,24 +12,24 @@ namespace protocol {
 /**
  * @brief X30协议处理类
  */
-class X30Protocol {
+class Serializer {
 public:
     /**
      * @brief 构造函数
      */
-    X30Protocol() = default;
+    Serializer() = default;
 
     /**
      * @brief 析构函数
      */
-    ~X30Protocol() = default;
+    ~Serializer() = default;
 
     /**
      * @brief 解析接收到的数据
      * @param data 接收到的数据
      * @return 解析出的消息对象
      */
-    std::unique_ptr<IMessage> parseReceivedData(const std::string& data);
+    std::unique_ptr<IMessage> deserializeMessage(const std::string& data);
 
     /**
      * @brief 序列化消息为发送数据

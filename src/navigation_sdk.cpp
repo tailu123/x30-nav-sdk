@@ -14,7 +14,7 @@
 // 包含网络和协议相关头文件
 #include "network/asio_network_model.hpp"
 // #include "network/message_queue.hpp"
-#include "protocol/x30_protocol.hpp"
+#include "protocol/serializer.hpp"
 
 
 // using namespace network;
@@ -54,32 +54,6 @@ void safeCallback(const Callback& callback, const std::string& callbackType, Arg
 
         std::cerr << "[" << ss.str() << "] " << callbackType << " 回调函数发生未知异常" << std::endl;
     }
-}
-
-// 事件转换为字符串的实现
-std::string Event::toString() const {
-    std::stringstream ss;
-
-    // 格式化时间戳
-    auto time_t_timestamp = std::chrono::system_clock::to_time_t(timestamp);
-    ss << std::put_time(std::localtime(&time_t_timestamp), "%Y-%m-%d %H:%M:%S") << " - ";
-
-    // 添加事件类型
-    switch (type) {
-        case EventType::CONNECTED:
-            ss << "已连接";
-            break;
-        case EventType::DISCONNECTED:
-            ss << "已断开连接";
-            break;
-    }
-
-    // 添加消息
-    if (!message.empty()) {
-        ss << ": " << message;
-    }
-
-    return ss.str();
 }
 
 // protocol::GetRealTimeStatusResponse -> RealTimeStatus
@@ -138,15 +112,6 @@ public:
         if (network_model_->connect(host, port)) {
             connected_ = true;
 
-            // 触发连接事件
-            if (event_callback_) {
-                Event event;
-                event.type = EventType::CONNECTED;
-                event.message = "已连接到 " + host + ":" + std::to_string(port);
-                event.timestamp = std::chrono::system_clock::now();
-                safeCallback(event_callback_, "事件", event);
-            }
-
             return true;
         }
 
@@ -160,26 +125,14 @@ public:
 
         network_model_->disconnect();
         connected_ = false;
-
-        // 触发断开连接事件
-        if (event_callback_) {
-            Event event;
-            event.type = EventType::DISCONNECTED;
-            event.message = "已断开连接";
-            event.timestamp = std::chrono::system_clock::now();
-            safeCallback(event_callback_, "事件", event);
-        }
     }
 
     bool isConnected() const {
         return connected_ && network_model_->isConnected();
     }
 
-    void setEventCallback(EventCallback callback) {
-        event_callback_ = std::move(callback);
-    }
 
-    RealTimeStatus getRealTimeStatus() {
+    RealTimeStatus request1002_RunTimeStatus() {
         try {
             if (!isConnected()) {
                 RealTimeStatus status;
@@ -246,12 +199,12 @@ public:
             return status;
 
         } catch (const std::exception& e) {
-            std::cerr << "getRealTimeStatus 异常: " << e.what() << std::endl;
+            std::cerr << "request1002_RunTimeStatus 异常: " << e.what() << std::endl;
             RealTimeStatus status;
             status.errorCode = ErrorCode_RealTimeStatus::UNKNOWN_ERROR;
             return status;
         } catch (...) {
-            std::cerr << "getRealTimeStatus 未知异常" << std::endl;
+            std::cerr << "request1002_RunTimeStatus 未知异常" << std::endl;
             RealTimeStatus status;
             status.errorCode = ErrorCode_RealTimeStatus::UNKNOWN_ERROR;
             return status;
@@ -259,7 +212,7 @@ public:
     }
 
     // 添加基于回调的异步方法实现
-    void startNavigationAsync(const std::vector<NavigationPoint>& points, NavigationResultCallback callback) {
+    void request1003_StartNavTask(const std::vector<NavigationPoint>& points, NavigationResultCallback callback) {
         if (!callback || points.empty()) {
             NavigationResult failResult;
             failResult.errorCode = ErrorCode_Navigation::INVALID_PARAM;
@@ -312,7 +265,7 @@ public:
         network_model_->sendMessage(request);
     }
 
-    bool cancelNavigation() {
+    bool request1004_CancelNavTask() {
         try {
             if (!isConnected()) {
                 return false;
@@ -358,15 +311,15 @@ public:
             return cancelResp && cancelResp->errorCode == protocol::ErrorCode_CancelTask::SUCCESS;
 
         } catch (const std::exception& e) {
-            std::cerr << "cancelNavigation 异常: " << e.what() << std::endl;
+            std::cerr << "request1004_CancelNavTask 异常: " << e.what() << std::endl;
             return false;
         } catch (...) {
-            std::cerr << "cancelNavigation 未知异常" << std::endl;
+            std::cerr << "request1004_CancelNavTask 未知异常" << std::endl;
             return false;
         }
     }
 
-    TaskStatusResult queryTaskStatus() {
+    TaskStatusResult request1007_NavTaskStatus() {
         try {
             if (!isConnected()) {
                 TaskStatusResult result;
@@ -434,12 +387,12 @@ public:
             return result;
 
         } catch (const std::exception& e) {
-            std::cerr << "queryTaskStatus 异常: " << e.what() << std::endl;
+            std::cerr << "request1007_NavTaskStatus 异常: " << e.what() << std::endl;
             TaskStatusResult result;
             result.errorCode = ErrorCode_QueryStatus::UNKNOWN_ERROR;
             return result;
         } catch (...) {
-            std::cerr << "queryTaskStatus 未知异常" << std::endl;
+            std::cerr << "request1007_NavTaskStatus 未知异常" << std::endl;
             TaskStatusResult result;
             result.errorCode = ErrorCode_QueryStatus::UNKNOWN_ERROR;
             return result;
@@ -521,7 +474,6 @@ private:
 
     SdkOptions options_;
     std::atomic<bool> connected_;
-    EventCallback event_callback_;
     std::unique_ptr<::network::AsioNetworkModel> network_model_;
 
     // 生成序列号， 从0到65535后溢出回到0
@@ -564,25 +516,21 @@ bool NavigationSdk::isConnected() const {
     return impl_->isConnected();
 }
 
-void NavigationSdk::setEventCallback(EventCallback callback) {
-    impl_->setEventCallback(std::move(callback));
-}
-
-RealTimeStatus NavigationSdk::getRealTimeStatus() {
-    return impl_->getRealTimeStatus();
+RealTimeStatus NavigationSdk::request1002_RunTimeStatus() {
+    return impl_->request1002_RunTimeStatus();
 }
 
 // 添加基于回调的异步方法实现
-void NavigationSdk::startNavigationAsync(const std::vector<NavigationPoint>& points, NavigationResultCallback callback) {
-    impl_->startNavigationAsync(points, std::move(callback));
+void NavigationSdk::request1003_StartNavTask(const std::vector<NavigationPoint>& points, NavigationResultCallback callback) {
+    impl_->request1003_StartNavTask(points, std::move(callback));
 }
 
-bool NavigationSdk::cancelNavigation() {
-    return impl_->cancelNavigation();
+bool NavigationSdk::request1004_CancelNavTask() {
+    return impl_->request1004_CancelNavTask();
 }
 
-TaskStatusResult NavigationSdk::queryTaskStatus() {
-    return impl_->queryTaskStatus();
+TaskStatusResult NavigationSdk::request1007_NavTaskStatus() {
+    return impl_->request1007_NavTaskStatus();
 }
 
 std::string NavigationSdk::getVersion() {

@@ -202,32 +202,12 @@ struct TaskStatusResult {
 };
 
 /**
- * @brief 事件信息
- */
-struct Event {
-    EventType type;                     ///< 事件类型
-    std::string message;                ///< 事件消息
-    std::chrono::system_clock::time_point timestamp; ///< 事件时间戳
-
-    /**
-     * @brief 将事件转换为字符串
-     * @return 事件的字符串表示
-     */
-    std::string toString() const;
-};
-
-/**
  * @brief SDK配置选项
  */
 struct SdkOptions {
     std::chrono::milliseconds connectionTimeout{5000}; ///< 连接超时时间
     std::chrono::milliseconds requestTimeout{3000};    ///< 请求超时时间
 };
-
-/**
- * @brief 事件回调函数类型
- */
-using EventCallback = std::function<void(const Event&)>;
 
 /**
  * @brief 导航任务结果回调函数类型

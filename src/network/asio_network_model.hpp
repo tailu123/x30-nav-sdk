@@ -78,14 +78,14 @@ private:
      * @param error 错误码
      * @param bytes_transferred 接收到的字节数
      */
-    void handleReceive(const boost::system::error_code& error, std::size_t bytes_transferred);
+    void receive(const boost::system::error_code& error, std::size_t bytes_transferred);
 
     /**
      * @brief 处理发送完成
      * @param error 错误码
      * @param bytes_transferred 发送的字节数
      */
-    void handleSend(const boost::system::error_code& error, std::size_t bytes_transferred);
+    void send(const boost::system::error_code& error, std::size_t bytes_transferred);
 
     /**
      * @brief IO线程函数

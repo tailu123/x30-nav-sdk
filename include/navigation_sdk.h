@@ -59,35 +59,29 @@ public:
     bool isConnected() const;
 
     /**
-     * @brief 设置事件回调函数
-     * @param callback 事件回调函数, 用于网路连接状态通知
-     */
-    void setEventCallback(EventCallback callback);
-
-    /**
      * @brief 获取机器狗的实时状态
      * @return 实时状态信息
      */
-    RealTimeStatus getRealTimeStatus();
+    RealTimeStatus request1002_RunTimeStatus();
 
     /**
      * @brief 基于回调的异步开始导航任务
      * @param points 导航点列表
      * @param callback 导航结果回调函数
      */
-    void startNavigationAsync(const std::vector<NavigationPoint>& points, NavigationResultCallback callback);
+    void request1003_StartNavTask(const std::vector<NavigationPoint>& points, NavigationResultCallback callback);
 
     /**
      * @brief 取消当前导航任务
      * @return 操作是否成功
      */
-    bool cancelNavigation();
+    bool request1004_CancelNavTask();
 
     /**
      * @brief 查询当前导航任务状态
      * @return 任务状态查询结果
      */
-    TaskStatusResult queryTaskStatus();
+    TaskStatusResult request1007_NavTaskStatus();
 
     /**
      * @brief 获取SDK版本

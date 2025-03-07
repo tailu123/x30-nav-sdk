@@ -47,11 +47,6 @@ int main() {
     // 打印SDK版本
     std::cout << "SDK版本: " << nav_sdk::NavigationSdk::getVersion() << std::endl;
 
-    // 设置事件回调
-    sdk.setEventCallback([](const nav_sdk::Event& event) {
-        std::cout << "收到事件: " << event.toString() << std::endl;
-    });
-
     // 连接到机器狗控制系统
     if (!sdk.connect("192.168.1.100", 8080)) {
         std::cerr << "连接失败!" << std::endl;
@@ -59,7 +54,7 @@ int main() {
     }
 
     // 获取实时状态
-    auto status = sdk.getRealTimeStatus();
+    auto status = sdk.request1002_RunTimeStatus();
     std::cout << "当前位置: (" << status.posX << ", " << status.posY << ", " << status.posZ << ")" << std::endl;
 
     // 创建导航点
@@ -73,7 +68,7 @@ int main() {
     points.push_back(point);
 
     // 发送导航任务
-    sdk.startNavigationAsync(points, [](const nav_sdk::NavigationResult& result) {
+    sdk.request1003_StartNavTask(points, [](const nav_sdk::NavigationResult& result) {
         std::cout << "导航任务已完成，errorCode: " << result.errorCode << std::endl;
     });
 
@@ -81,11 +76,11 @@ int main() {
     std::this_thread::sleep_for(std::chrono::seconds(5));
 
     // 查询任务状态
-    auto taskStatus = sdk.queryTaskStatus();
+    auto taskStatus = sdk.request1007_NavTaskStatus();
     std::cout << "导航任务状态: " << static_cast<int>(taskStatus.status) << std::endl;
 
     // 取消导航任务
-    sdk.cancelNavigation();
+    sdk.request1004_CancelNavTask();
 
     // 断开连接
     sdk.disconnect();
