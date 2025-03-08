@@ -10,9 +10,9 @@ The SDK consists of the following three main layers:
 
 | Layer | Responsibility | Key Components |
 |------|------|---------|
-| **Application Layer** | Responsible for calling interfaces provided by the interface layer, integrating business logic | ___ |
+| **Application Layer** | Responsible for calling interfaces provided by the interface layer, integrating business logic | _ |
 | **Interface Layer** | Responsible for request/response management, providing functional interfaces | RobotServerSdk class, RobotServerSdkImpl class |
-| **Communication Layer** | Responsible for protocol serialization, data transmission | AsioNetworkModel class, Serializer class |
+| **Communication Layer** | Responsible for protocol serialization, data transmission | Serializer class, AsioNetworkModel class |
 
 ### 1.2 Architecture Diagram
 
@@ -36,9 +36,8 @@ The SDK consists of the following three main layers:
 │                      【Communication Layer】                             │
 │     Main Function: Responsible for protocol serialization,              │
 │                    data transmission                                    │
-│     Key Classes: Serializer class (protocol serialization/              │
-│                  deserialization), AsioNetworkModel class               │
-│                  (network communication)                                │
+│     Key Classes: Serializer class (protocol serialization),             │
+│                  AsioNetworkModel class (network communication)         │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -77,7 +76,7 @@ The communication layer is responsible for communicating with the robot dog cont
 
 #### Core Components
 
-- **Serializer Class**: Handles message serialization and deserialization
+- **Serializer Class**: Handles message serialization
 - **AsioNetworkModel Class**: Network implementation based on Boost.Asio
 - **INetworkCallback Interface**: Defines the network layer callback interface
 

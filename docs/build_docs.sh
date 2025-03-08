@@ -50,4 +50,4 @@ cat > build/index.html << EOF
 EOF
 
 echo "文档生成完成！"
-echo "您可以通过浏览器打开 build/index.html 查看文档。"
+echo "您可以通过浏览器打开 ./docs/sphinx/build/index.html 查看文档。"

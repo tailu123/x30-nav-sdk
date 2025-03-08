@@ -10,9 +10,9 @@ SDK 由以下三个主要层次组成：
 
 | 层次 | 职责 | 关键组件 |
 |------|------|---------|
-| **应用层** | 负责调用接口层提供的接口，集成实现业务逻辑 | ___ |
+| **应用层** | 负责调用接口层提供的接口，集成实现业务逻辑 | _ |
 | **接口层** | 负责请求/响应的管理，对外提供功能接口 | RobotServerSdk 类、RobotServerSdkImpl 类 |
-| **通信层** | 负责协议序列化，数据传输 | AsioNetworkModel 类、Serializer 类 |
+| **通信层** | 负责协议序列化，数据传输 | Serializer 类、AsioNetworkModel 类 |
 
 ### 1.2 架构图示
 
@@ -33,7 +33,7 @@ SDK 由以下三个主要层次组成：
 ┌────────────────────────────────────────────────────────────────────────┐
 │                      【通信层（Communication Layer）】                    │
 │                    主要功能：负责协议序列化，数据传输                        │
-│   关键类：Serializer 类（协议序列化/反序列化），AsioNetworkModel 类（网络通信） │
+│   关键类：Serializer 类（协议序列化），AsioNetworkModel 类（网络通信）         │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -72,7 +72,7 @@ SDK 由以下三个主要层次组成：
 
 #### 核心组件
 
-- **Serializer 类**：处理消息的序列化和反序列化
+- **Serializer 类**：处理消息的序列化
 - **AsioNetworkModel 类**：基于 Boost.Asio 的网络实现
 - **INetworkCallback 接口**：定义网络层回调接口
 
@@ -161,36 +161,10 @@ SDK 中的数据流展示了请求和响应的完整生命周期。
 3. **消息处理** → RobotServerSdkImpl 处理响应消息
 4. **结果返回** → 结果通过同步返回或异步回调传递给用户
 
-### 4.3 时序图
+### 4.3 connect 流程
 
-```mermaid
-sequenceDiagram
-    participant App as 应用程序
-    participant SDK as RobotServerSdk
-    participant Impl as RobotServerSdkImpl
-    participant Proto as Serializer
-    participant Net as AsioNetworkModel
-    participant Dog as 机器狗系统
-
-    App->>SDK: 调用API
-    SDK->>Impl: 转发请求
-    Impl->>Proto: 创建请求消息
-    Proto->>Proto: 序列化消息
-    Proto->>Net: 传递序列化数据
-    Net->>Dog: 发送网络数据
-
-    Dog-->>Net: 返回响应数据
-    Net-->>Proto: 传递原始数据
-    Proto-->>Proto: 解析响应数据
-    Proto-->>Impl: 创建响应消息
-    Impl-->>SDK: 处理响应
-    SDK-->>App: 返回结果
-```
-
-### 4.4 connect 流程
-
-实线箭头表示用户线程; 连接时期虚线箭头依赖系统底层IO; 收发数据时虚线箭头表示IO线程
-
+- **实线 (->>)**：表示**用户线程**内的同步调用，调用方等待返回结果。
+- **虚线 (-->>)**：表示**依赖系统底层 IO 复用的异步调用**，通常用于 **异步事件回调** 或 **IO 线程的非阻塞操作**。
 
 ```mermaid
 sequenceDiagram
@@ -207,18 +181,18 @@ sequenceDiagram
     Impl->>Net: connect(host, port)
 
     %% 异步连接请求
-    Net->>Dog: async_connect(socket_, endpoints, callback)
+    Net->>Net: async_connect(.., callback)
 
     %% 主线程等待连接完成或超时
     Net->>Net: run_one_for(connection_timeout_)
 
     Net-->>Dog: TCP连接请求
     Dog-->>Net: 连接响应
-    Net-->>Net: 调用连接完成回调,connected_ = true
+    Net-->>Net: 调用连接完成回调
 
     %% 启动专用IO线程
-    Net->>IOThread: 创建并启动线程(ioThreadFunc)
-    Note over IOThread,IOThread: IO线程持续运行io_context_.run()
+    Net->>Net: run_one_for返回
+    Net->>IOThread: 启动线程(ioThreadFunc)
 
     %% 启动第一次接收
     Net->>Net: startReceive()
@@ -231,11 +205,14 @@ sequenceDiagram
     %% 后续的异步操作
     IOThread-->>Dog: send
     Dog-->>IOThread: receive
+
+Note over Net, IOThread: 基于 io_context_.run() 处理 IO 事件（epoll/kqueue/select）
 ```
 
-### 4.5 请求流程(同步) 1002, 1004, 1007
+### 4.4 请求流程(同步) 1002, 1004, 1007
 
-实线箭头表示用户线程，虚线箭头表示IO线程
+- **实线 (->>)**：表示**用户线程**内的同步调用，调用方等待返回结果。
+- **虚线 (-->>)**：表示**依赖系统底层 IO 复用的异步调用**，通常用于 **异步事件回调** 或 **IO 线程的非阻塞操作**。
 
 ```mermaid
 sequenceDiagram
@@ -253,9 +230,10 @@ sequenceDiagram
     Impl->>Impl: generateSequenceNumber()
     Impl->>Proto: sendMessage()
     Proto->>Net: serializeMessage()
-    Net->>IO: 将async_write请求放入io_context队列
+    Net->>Net: 调用boost::asio::async_write()
     Net->>Impl: return
     Impl->>Impl: wait_for(request_timeout) 等待响应
+    Note over Net, IO: IO 线程稍后在io_context.run()中执行实际发送
     IO-->>Dog: 执行boost::asio::async_write()
 
     %% Response Flow
@@ -269,9 +247,10 @@ sequenceDiagram
     SDK->>App: 返回结果
 ```
 
-### 4.6 请求流程(异步) 1003
+### 4.5 请求流程(异步) 1003
 
-实线箭头表示用户线程，虚线箭头表示IO线程
+- **实线 (->>)**：表示**用户线程**内的同步调用，调用方等待返回结果。
+- **虚线 (-->>)**：表示**依赖系统底层 IO 复用的异步调用**，通常用于 **异步事件回调** 或 **IO 线程的非阻塞操作**。
 
 ```mermaid
 sequenceDiagram
@@ -290,10 +269,11 @@ sequenceDiagram
     Impl->>Impl: 保存回调函数 [seqNum, callback]
     Impl->>Proto: sendMessage()
     Proto->>Net: serializeMessage()
-    Net->>IO: 将async_write请求放入io_context队列
+    Net->>Net: 调用boost::asio::async_write()
     Net->>Impl: return
     Impl->>SDK: return
     SDK->>App: return
+    Note over Net, IO: IO 线程稍后在io_context.run()中执行实际发送
     IO-->>Dog: 执行boost::asio::async_write()
 
     %% Response Flow
